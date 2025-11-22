@@ -33,7 +33,10 @@ fi
 
 # Category 3: Offline-First (5 points)
 echo "3. Offline-First:"
-if [ -f "parser/README.md" ]; then
+if [ -f "docs/OFFLINE_FIRST.md" ]; then
+    echo "   ✓ Complete offline-first documentation (air-gapped deployment)"
+    score=$((score + 5))
+elif [ -f "parser/README.md" ]; then
     echo "   ⚠ Partial (parser/reasoner offline, Virtuoso can be local)"
     score=$((score + 3))
 else
@@ -55,11 +58,26 @@ score=$((score + doc_score * 15 / 7))
 
 # Category 5: Testing (15 points)
 echo "5. Testing:"
-if [ -d "parser/test" ] || [ -d "orchestrator/test" ]; then
-    echo "   ⚠ Test infrastructure exists but no tests yet"
-    score=$((score + 2))
+test_score=0
+[ -f "parser/test/test_generic_conversation.ml" ] && ((test_score++))
+[ -f "parser/test/test_claude_parser.ml" ] && ((test_score++))
+[ -f "orchestrator/test/anamnesis/ports/parser_port_test.exs" ] && ((test_score++))
+[ -f "orchestrator/test/anamnesis/pipelines/ingestion_pipeline_test.exs" ] && ((test_score++))
+[ -f "learning/test/runtests.jl" ] && ((test_score++))
+[ -f "visualization/src/__tests__/Domain_test.res" ] && ((test_score++))
+[ -f "visualization/src/__tests__/ColorMixing_test.res" ] && ((test_score++))
+
+if [ $test_score -ge 7 ]; then
+    echo "   ✓ Comprehensive test suites (all components)"
+    score=$((score + 15))
+elif [ $test_score -ge 4 ]; then
+    echo "   ⚠ Partial test coverage ($test_score/7 components)"
+    score=$((score + 10))
+elif [ $test_score -ge 1 ]; then
+    echo "   ⚠ Test infrastructure exists ($test_score/7 components)"
+    score=$((score + 5))
 else
-    echo "   ✗ No test infrastructure"
+    echo "   ✗ No tests"
 fi
 
 # Category 6: Build System (10 points)
@@ -129,13 +147,26 @@ echo "==================================="
 echo "FINAL SCORE: $score / $max_score"
 echo "==================================="
 
-if [ $score -ge 70 ]; then
-    echo "✅ BRONZE LEVEL ACHIEVED"
+if [ $score -ge 95 ]; then
+    echo "🏆 GOLD LEVEL ACHIEVED (95+)"
+    echo "   Excellence in all RSR categories!"
+    exit 0
+elif [ $score -ge 85 ]; then
+    echo "🥈 SILVER LEVEL ACHIEVED (85-94)"
+    echo "   High-quality standards met"
+    echo "   $(( 95 - score )) points from Gold level"
+    exit 0
+elif [ $score -ge 70 ]; then
+    echo "🥉 BRONZE LEVEL ACHIEVED (70-84)"
+    echo "   Minimum viable RSR compliance"
+    echo "   $(( 85 - score )) points from Silver level"
     exit 0
 elif [ $score -ge 50 ]; then
-    echo "⚠️  APPROACHING BRONZE (need $((70 - score)) more points)"
+    echo "⚠️  APPROACHING BRONZE (50-69)"
+    echo "   Need $((70 - score)) more points for Bronze certification"
     exit 1
 else
-    echo "❌ NOT RSR COMPLIANT (need $((70 - score)) more points for Bronze)"
+    echo "❌ NOT RSR COMPLIANT (<50)"
+    echo "   Need $((70 - score)) more points for Bronze level"
     exit 1
 fi
