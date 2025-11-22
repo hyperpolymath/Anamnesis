@@ -1,0 +1,2605 @@
+= OCaml Parser Combinators and Elixir Integration
+:author: Research Document for Anamnesis Project
+:docdate: 2025-11-22
+:toc: left
+:toclevels: 3
+:sectlinks:
+:sectnums:
+:source-highlighter: pygments
+:icons: font
+
+[abstract]
+--
+This document provides comprehensive research on OCaml parser combinator libraries and OCaml-Elixir integration strategies for the Anamnesis conversation knowledge extraction system. It covers parser combinator libraries (Angstrom, Menhir, MParser, etc.), OCaml-Elixir bridge mechanisms (Ports vs NIFs), JSON parsing approaches, and architecture patterns for multi-format conversation parsers.
+
+**Target Use Case**: Parse multiple conversation formats (Claude JSON, ChatGPT exports, Mistral, etc.) using OCaml parser combinators and bridge to Elixir orchestration layer.
+--
+
+== Executive Summary
+
+=== Key Findings
+
+* **Angstrom** is the recommended parser combinator library for production use (performance-focused, zero-copy I/O, incremental parsing)
+* **Ports** are the recommended OCaml-Elixir integration mechanism for Anamnesis (safety, process isolation, easier debugging)
+* **Yojson + Atdgen** provide the best JSON parsing approach for type-safe deserialization
+* **Modular architecture** with extensible format registry enables multi-LLM conversation parsing
+
+=== Recommended Stack
+
+[cols="1,2,2"]
+|===
+|Component |Technology |Rationale
+
+|Parser Combinators
+|Angstrom
+|Performance, incremental parsing, production-ready
+
+|Lexer (if needed)
+|Sedlex
+|Unicode support, PPX integration
+
+|JSON Parsing
+|Yojson + Atdgen
+|Type safety, automatic code generation
+
+|OCaml-Elixir Bridge
+|Erlang Ports (Alberto library)
+|Safety, process isolation, fault tolerance
+
+|Fallback Option
+|NIFs (if performance critical)
+|Lower latency, but reduces fault tolerance
+|===
+
+== OCaml Parser Combinator Libraries
+
+=== Overview
+
+Parser combinator libraries enable building parsers by composing small, reusable parsing functions. OCaml has several mature options, each with different trade-offs.
+
+=== Angstrom (Recommended)
+
+**Repository**: https://github.com/inhabitedtype/angstrom
+
+**Version**: 0.15.0 (latest as of 2025)
+
+**Installation**: `opam install angstrom`
+
+==== Key Features
+
+* **Performance-focused**: Built for speed and memory efficiency
+* **Zero-copy I/O**: Unbuffered interface enables zero-copy operations
+* **Incremental parsing**: Consumes input incrementally (blocking or non-blocking)
+* **Backtracking**: Parsers backtrack by default with unbounded lookahead
+* **Tight loops**: Iterates over input sections efficiently (critical for performance)
+
+==== Design Philosophy
+
+Angstrom started as a port of Haskell's Attoparsec library, designed specifically for network protocols and serialization formats. The name "Angstrom" is a homage to Attoparsec.
+
+==== Use Cases
+
+* HTTP parsers
+* JSON parsers
+* Network protocols
+* Binary formats
+* **Conversation format parsing** (our use case)
+
+==== Code Example
+
+[source,ocaml]
+----
+open Angstrom
+
+(* Simple key-value parser *)
+let key =
+  take_while1 (function 'a'..'z' | 'A'..'Z' | '_' -> true | _ -> false)
+
+let value =
+  char '"' *> take_while (function '"' -> false | _ -> true) <* char '"'
+
+let pair =
+  lift2 (fun k v -> (k, v))
+    (key <* char ':' <* skip_while (fun c -> c = ' '))
+    value
+
+(* Parse incrementally *)
+let parse_conversation_header input =
+  match parse_string ~consume:All pair input with
+  | Ok (k, v) -> Printf.printf "Key: %s, Value: %s\n" k v
+  | Error msg -> Printf.printf "Error: %s\n" msg
+----
+
+==== Performance Characteristics
+
+Benchmarks from 2016 (most recent available):
+
+* **JSON parsing**: Second-fastest after Yojson (which doesn't support incremental parsing)
+* **Memory allocations**: Low, competitive with specialized parsers
+* **Latency**: Suitable for real-time parsing
+
+NOTE: Yojson is faster for JSON specifically, but Angstrom's incremental parsing capability is valuable for streaming large conversation logs.
+
+==== Strengths
+
+* Production-ready and battle-tested
+* Excellent documentation and examples
+* Active maintenance
+* Monadic and applicative interfaces
+* Zero-copy I/O for maximum performance
+
+==== Weaknesses
+
+* Slightly more complex API than MParser
+* Requires understanding of parser combinator patterns
+* Not as fast as specialized parsers (e.g., Yojson for JSON)
+
+=== Menhir (Parser Generator)
+
+**Repository**: https://gallium.inria.fr/~fpottier/menhir/
+
+**Version**: 20250912 (September 2025 release)
+
+**Installation**: `opam install menhir`
+
+==== Key Features
+
+* **LR(1) parser generator**: Compiles grammar specifications to OCaml code
+* **Better error messages**: More human-comprehensible than ocamlyacc
+* **Reentrant parsers**: Fully reentrant and parameterizable
+* **90% ocamlyacc compatible**: Easy migration from ocamlyacc
+* **Recent improvements**: Enhanced table compression (September 2025)
+
+==== Architecture
+
+Menhir uses two back-ends:
+
+1. **Table back-end** (`--table`): Uses table compression algorithm (improved in 2025)
+2. **Code back-end**: Compiles LR automaton to mutually recursive OCaml functions
+
+==== Code Example
+
+[source,menhir]
+----
+/* conversation.mly - Grammar for simple conversation format */
+%token <string> SPEAKER
+%token <string> MESSAGE
+%token COLON NEWLINE EOF
+%start <(string * string) list> conversation
+
+%%
+
+conversation:
+  | messages = list(message) EOF { messages }
+
+message:
+  | speaker = SPEAKER COLON msg = MESSAGE NEWLINE
+    { (speaker, msg) }
+----
+
+[source,ocaml]
+----
+(* conversation_lexer.mll - Lexer for conversation *)
+{
+  open Conversation_parser
+}
+
+rule token = parse
+  | [' ' '\t']     { token lexbuf }
+  | '\n'           { NEWLINE }
+  | ':'            { COLON }
+  | ['A'-'Z''a'-'z']+ as s { SPEAKER s }
+  | '"' ([^'"']* as msg) '"' { MESSAGE msg }
+  | eof            { EOF }
+----
+
+==== Strengths
+
+* Formal grammar specification (maintainable, documentable)
+* Excellent error diagnostics
+* Type-safe parser generation
+* Reference manual is comprehensive
+
+==== Weaknesses
+
+* Requires separate lexer (usually ocamllex or sedlex)
+* Less composable than parser combinators
+* Grammar changes require recompilation
+* Not ideal for ad-hoc or exploratory parsing
+
+==== When to Use Menhir vs Angstrom
+
+[cols="2,3,3"]
+|===
+|Criterion |Angstrom |Menhir
+
+|Grammar complexity
+|Simple to moderate
+|Complex, well-defined
+
+|Grammar stability
+|Evolving, experimental
+|Stable, formal
+
+|Composability
+|High (combinators)
+|Low (monolithic grammar)
+
+|Error recovery
+|Manual control
+|Automatic (with annotations)
+
+|Incremental parsing
+|Native support
+|Requires manual implementation
+
+|Learning curve
+|Moderate
+|Steeper (requires grammar knowledge)
+|===
+
+**Recommendation for Anamnesis**: Use **Angstrom** for conversation parsing due to:
+
+* Multiple evolving formats (Claude, ChatGPT, Mistral)
+* Need for composability (shared parsers for common structures)
+* Incremental parsing of large conversation logs
+
+Use **Menhir** for λProlog parser (stable, formal grammar).
+
+=== Sedlex (Unicode Lexer)
+
+**Repository**: https://github.com/ocaml-community/sedlex
+
+**Version**: 3.6 (latest)
+
+**Installation**: `opam install sedlex`
+
+==== Key Features
+
+* **Unicode support**: Full Unicode lexing (unlike ocamllex)
+* **PPX syntax extension**: Lexer specifications within OCaml source
+* **Menhir integration**: Works seamlessly with Menhir via `Sedlexing.lexing_positions`
+
+==== Integration with Menhir
+
+[source,ocaml]
+----
+open Sedlexing
+
+let rec token lexbuf =
+  match%sedlex lexbuf with
+  | white_space -> token lexbuf
+  | "speaker" -> SPEAKER
+  | "message" -> MESSAGE
+  | ':' -> COLON
+  | '"', Star (Compl '"'), '"' ->
+      let s = Utf8.lexeme lexbuf in
+      STRING (String.sub s 1 (String.length s - 2))
+  | eof -> EOF
+  | _ -> failwith "Unexpected character"
+
+(* Create lexbuf from string with Unicode support *)
+let lexbuf = Utf8.from_string input
+let positions () = Sedlexing.lexing_positions lexbuf
+----
+
+==== Strengths
+
+* Unicode support (critical for international conversations)
+* PPX integration (no separate `.mll` files)
+* Compatible with Menhir's revised API
+
+==== Weaknesses
+
+* PPX dependency (adds compilation complexity)
+* Less documentation than ocamllex
+
+**Recommendation**: Use Sedlex if Unicode support is needed for conversation content.
+
+=== MParser
+
+**Repository**: http://harnold.org/software/ocaml-base/doc/MParser.html
+
+**Installation**: `opam install mparser`
+
+==== Key Features
+
+* Monadic parser combinator library (similar to Haskell's Parsec, F#'s FParsec)
+* Complete set of combinators
+* Efficient implementation
+
+==== Weaknesses
+
+* **No Unicode support**: Relies on OCaml `char` and `string` types
+* Less actively maintained than Angstrom
+* Fewer production users
+
+**Recommendation**: Use Angstrom instead (better performance, active maintenance).
+
+=== Opal
+
+**Repository**: https://github.com/pyrocat101/opal
+
+==== Key Features
+
+* Self-contained monadic parser combinators
+* Based on Haskell's Parsec
+* Minimal dependencies
+
+==== Strengths
+
+* Simple, self-contained
+* Good for learning
+
+==== Weaknesses
+
+* Not production-focused
+* Less performance optimization than Angstrom
+
+**Recommendation**: Educational use only; use Angstrom for production.
+
+=== Other Libraries
+
+==== Combo
+
+**Repository**: https://github.com/4y8/combo
+
+Simple parser combinator library inspired by parser combinator papers. Educational focus.
+
+==== Planck
+
+Small monadic parser combinator with proof of implementation (OCaml syntax parser creates identical AST to OCaml's lex+yacc).
+
+**Use case**: Academic interest, proof of correctness.
+
+=== Summary: Parser Combinator Library Comparison
+
+[cols="1,2,2,2,2"]
+|===
+|Library |Maturity |Performance |Use Case |Recommendation
+
+|Angstrom
+|Production
+|High
+|Network protocols, serialization
+|**Primary choice**
+
+|Menhir
+|Production
+|High
+|Formal grammars
+|λProlog parser
+
+|MParser
+|Stable
+|Moderate
+|General parsing
+|Avoid (use Angstrom)
+
+|Sedlex
+|Production
+|N/A (lexer)
+|Unicode lexing
+|Use with Menhir
+
+|Opal
+|Experimental
+|Unknown
+|Education
+|Avoid
+
+|Combo/Planck
+|Academic
+|Unknown
+|Research
+|Avoid
+|===
+
+== OCaml-Elixir Integration
+
+=== Overview
+
+Three main approaches for OCaml-Elixir interoperability:
+
+1. **Erlang Ports**: Separate OS processes communicating via STDIN/STDOUT
+2. **NIFs** (Native Implemented Functions): Shared memory, C FFI
+3. **Distributed Nodes**: Erlang distribution protocol
+
+For Anamnesis, we focus on **Ports** and **NIFs**.
+
+=== Erlang Ports (Recommended)
+
+==== Mechanism
+
+Ports start a separate OS process to communicate with other languages through STDIN/STDOUT, guaranteeing process isolation.
+
+==== Architecture Diagram
+
+----
+┌─────────────────────────────────────┐
+│  Elixir Orchestrator (BEAM VM)      │
+│  ┌──────────────────────────────┐   │
+│  │  Port Process                │   │
+│  │  - Sends Erlang terms        │   │
+│  │  - Receives Erlang terms     │   │
+│  └────────┬─────────────────────┘   │
+│           │ STDIN/STDOUT            │
+└───────────┼─────────────────────────┘
+            │
+            │ External Term Format (ETF)
+            │
+┌───────────┼─────────────────────────┐
+│           ▼                         │
+│  OCaml Parser Process               │
+│  ┌──────────────────────────────┐   │
+│  │  Alberto (ETF decoder/encoder)│  │
+│  │  - Reads Erlang terms        │   │
+│  │  - Sends Erlang terms        │   │
+│  └────────┬─────────────────────┘   │
+│           │                         │
+│  ┌────────▼─────────────────────┐   │
+│  │  Angstrom Parser             │   │
+│  │  - Parse conversation JSON   │   │
+│  │  - Extract structured data   │   │
+│  └──────────────────────────────┘   │
+└─────────────────────────────────────┘
+----
+
+==== OCaml Libraries for Ports
+
+===== Alberto
+
+**Repository**: https://github.com/selectel/alberto
+
+**Description**: Implementation of Erlang External Term Format (ETF) for writing Erlang port drivers in OCaml.
+
+**Example**:
+
+[source,ocaml]
+----
+(* Echo server in OCaml *)
+open Alberto
+
+let () =
+  Alberto.interact (fun x -> x)
+  (* Echoes back any Erlang term received *)
+----
+
+[source,elixir]
+----
+# Elixir side
+defmodule ConversationParser do
+  def parse_conversation(json_string) do
+    port = Port.open({:spawn, "./conversation_parser.native"}, [:binary, packet: 4])
+
+    # Send JSON string to OCaml parser
+    Port.command(port, :erlang.term_to_binary({:parse, json_string}))
+
+    # Receive parsed result
+    receive do
+      {^port, {:data, data}} ->
+        :erlang.binary_to_term(data)
+    after
+      5000 -> {:error, :timeout}
+    end
+  end
+end
+----
+
+[source,ocaml]
+----
+(* OCaml parser using Alberto *)
+open Alberto
+open Angstrom
+
+let parse_json json_str =
+  (* Use Angstrom or Yojson to parse *)
+  match Yojson.Safe.from_string json_str with
+  | exception _ -> `Error "Invalid JSON"
+  | json -> `Ok json
+
+let handle_command = function
+  | `Tuple [`Atom "parse"; `String json] ->
+      parse_json json
+  | _ -> `Error "Unknown command"
+
+let () =
+  Alberto.interact handle_command
+----
+
+===== ocaml-erlang-port
+
+**Repository**: https://github.com/EchoTeam/ocaml-erlang-port
+
+**Description**: Support library for OCaml programs running as Erlang ports.
+
+**Features**:
+* Pattern matching on Erlang terms (tuples, atoms)
+* Type-safe marshalling
+* Integration with Erlang's port protocol
+
+==== Strengths of Ports
+
+* **Process isolation**: OCaml crash doesn't bring down BEAM VM
+* **Fault tolerance**: Aligns with Erlang/Elixir philosophy
+* **Debugging**: Easier to debug separate processes
+* **Language independence**: Could swap OCaml for another language
+* **Safety**: Cannot corrupt BEAM VM memory
+
+==== Weaknesses of Ports
+
+* **Latency**: Inter-process communication overhead (serialization, context switching)
+* **Throughput**: Lower than shared memory (NIFs)
+* **Complexity**: Requires serialization/deserialization (ETF encoding)
+
+==== Performance Characteristics
+
+* **Latency**: ~10-100 microseconds per call (depending on data size)
+* **Throughput**: Suitable for batch processing, not real-time per-message parsing
+* **Scalability**: Excellent (multiple port processes can run in parallel)
+
+==== Best Practices
+
+1. **Batch processing**: Send conversation batches, not individual messages
+2. **Connection pooling**: Maintain pool of port processes for parallel parsing
+3. **Error handling**: Implement timeouts and restart logic
+4. **Binary protocol**: Use Erlang External Term Format efficiently
+
+=== NIFs (Native Implemented Functions)
+
+==== Mechanism
+
+NIFs integrate with third-party code in the same memory space via C bindings, offering low overhead and best performance, but faulty code can bring down the entire VM.
+
+==== Architecture Diagram
+
+----
+┌─────────────────────────────────────────┐
+│  Elixir Orchestrator (BEAM VM)          │
+│                                         │
+│  ┌───────────────────────────────────┐  │
+│  │  NIF Call (shared memory)         │  │
+│  │  - Direct function call           │  │
+│  │  - No serialization               │  │
+│  └────────┬──────────────────────────┘  │
+│           │                             │
+│           │ C FFI                       │
+│           │                             │
+│  ┌────────▼──────────────────────────┐  │
+│  │  OCaml NIF (C stub)               │  │
+│  │  - OCaml runtime initialized      │  │
+│  │  - Calls OCaml parser functions   │  │
+│  └────────┬──────────────────────────┘  │
+└───────────┼─────────────────────────────┘
+            │
+            │ (in-process)
+            │
+    ┌───────▼──────────────┐
+    │  OCaml Parser Code   │
+    │  - Angstrom          │
+    │  - Yojson            │
+    └──────────────────────┘
+----
+
+==== Implementation Approach
+
+===== C Stub (NIF Entry Point)
+
+[source,c]
+----
+#include "erl_nif.h"
+#include <caml/mlvalues.h>
+#include <caml/callback.h>
+#include <caml/alloc.h>
+#include <caml/memory.h>
+
+static ERL_NIF_TERM
+parse_conversation_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    ErlNifBinary json_binary;
+
+    if (!enif_inspect_binary(env, argv[0], &json_binary)) {
+        return enif_make_badarg(env);
+    }
+
+    // Initialize OCaml runtime (once)
+    static int initialized = 0;
+    if (!initialized) {
+        char *argv[] = { "conversation_parser", NULL };
+        caml_startup(argv);
+        initialized = 1;
+    }
+
+    // Call OCaml function
+    CAMLparam0();
+    CAMLlocal2(ml_json_str, ml_result);
+
+    ml_json_str = caml_alloc_string(json_binary.size);
+    memcpy(String_val(ml_json_str), json_binary.data, json_binary.size);
+
+    ml_result = caml_callback(*caml_named_value("parse_conversation"), ml_json_str);
+
+    // Convert OCaml result back to Erlang term
+    // (simplified - actual conversion is more complex)
+    ERL_NIF_TERM result = enif_make_string(env, String_val(ml_result), ERL_NIF_LATIN1);
+
+    CAMLreturnT(ERL_NIF_TERM, result);
+}
+
+static ErlNifFunc nif_funcs[] = {
+    {"parse_conversation", 1, parse_conversation_nif}
+};
+
+ERL_NIF_INIT(Elixir.ConversationParser, nif_funcs, NULL, NULL, NULL, NULL)
+----
+
+===== OCaml Implementation
+
+[source,ocaml]
+----
+(* conversation_parser.ml *)
+open Angstrom
+open Yojson.Safe
+
+let parse_conversation json_str =
+  try
+    let json = from_string json_str in
+    (* Process JSON... *)
+    to_string json
+  with _ -> "Error parsing JSON"
+
+(* Register function for C callback *)
+let () =
+  Callback.register "parse_conversation" parse_conversation
+----
+
+===== Elixir Module
+
+[source,elixir]
+----
+defmodule ConversationParser do
+  @on_load :load_nifs
+
+  def load_nifs do
+    :erlang.load_nif('./conversation_parser_nif', 0)
+  end
+
+  # Stub - replaced by NIF
+  def parse_conversation(_json_string) do
+    raise "NIF not loaded"
+  end
+end
+----
+
+==== Modern NIF Alternatives (Safer)
+
+===== Rustler (Rust NIFs)
+
+**Why**: Rust provides memory safety and prevents common NIF crashes.
+
+[source,rust]
+----
+use rustler::{Encoder, Env, Error, Term};
+
+#[rustler::nif]
+fn parse_conversation(json_str: String) -> Result<String, Error> {
+    // Parse JSON in Rust
+    // Could call OCaml via C FFI if needed
+    Ok(json_str)
+}
+
+rustler::init!("Elixir.ConversationParser", [parse_conversation]);
+----
+
+===== Zigler (Zig NIFs)
+
+**Why**: Zig provides excellent C interop for calling OCaml.
+
+NOTE: While Rustler and Zigler are safer than C NIFs, calling OCaml from them still requires C FFI (OCaml runtime integration).
+
+==== Strengths of NIFs
+
+* **Low latency**: ~0.1-1 microseconds per call
+* **High throughput**: No serialization overhead
+* **Simplicity**: Direct function calls
+
+==== Weaknesses of NIFs
+
+* **VM stability**: Crashes can bring down entire BEAM VM
+* **Scheduler interference**: Long-running NIFs block schedulers
+* **Complexity**: OCaml runtime integration is non-trivial
+* **Loss of fault tolerance**: Defeats Erlang's supervision trees
+
+==== Critical Constraints for NIFs
+
+1. **Execution time**: NIFs MUST complete in <1ms (preferably <100μs)
+2. **Memory safety**: No segfaults or memory corruption
+3. **Thread safety**: OCaml runtime is single-threaded (requires careful handling)
+4. **Error handling**: All errors must be caught and returned safely
+
+==== Best Practices (if using NIFs)
+
+1. **Keep functions small**: Parse small chunks only
+2. **Offload to threads**: Use `enif_schedule_nif` for long operations
+3. **Thorough testing**: Test edge cases exhaustively
+4. **Error handling**: Never let OCaml exceptions propagate to C
+5. **Consider Rustler**: Use Rust instead of C for memory safety
+
+=== Ports vs NIFs: Decision Matrix
+
+[cols="1,2,2,3"]
+|===
+|Criterion |Ports |NIFs |Recommendation for Anamnesis
+
+|Latency
+|10-100μs
+|0.1-1μs
+|Ports (batch processing, not latency-sensitive)
+
+|Throughput
+|Moderate
+|High
+|Ports (large batches offset overhead)
+
+|Safety
+|Excellent
+|Poor
+|**Ports (critical for stability)**
+
+|Fault Tolerance
+|Excellent
+|Poor
+|**Ports (aligns with Elixir philosophy)**
+
+|Debugging
+|Easy
+|Hard
+|Ports (separate processes)
+
+|Development Complexity
+|Moderate
+|High
+|Ports (simpler)
+
+|Scalability
+|Excellent (parallel ports)
+|Limited (scheduler contention)
+|Ports
+
+|Incremental Parsing
+|Natural
+|Requires manual state management
+|Ports
+|===
+
+=== Recommended Approach: Erlang Ports
+
+==== Rationale
+
+1. **Safety**: Parser crashes don't bring down orchestrator
+2. **Fault tolerance**: Supervisors can restart failed parsers
+3. **Scalability**: Pool of parser processes handles concurrent parsing
+4. **Simplicity**: Clearer separation of concerns
+5. **Debugging**: Easier to test and debug OCaml parser standalone
+
+==== Architecture
+
+[source,elixir]
+----
+defmodule Anamnesis.ConversationParser do
+  use GenServer
+
+  @pool_size 4
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
+
+  def init(_) do
+    # Start pool of OCaml parser ports
+    ports = for _ <- 1..@pool_size do
+      Port.open({:spawn_executable, "./parser/conversation_parser.native"},
+                [:binary, packet: 4])
+    end
+    {:ok, %{ports: ports, current: 0}}
+  end
+
+  def parse_conversation(json_string) do
+    GenServer.call(__MODULE__, {:parse, json_string}, 10_000)
+  end
+
+  def handle_call({:parse, json}, _from, state) do
+    # Round-robin port selection
+    port = Enum.at(state.ports, state.current)
+    next_current = rem(state.current + 1, @pool_size)
+
+    # Send to OCaml parser
+    Port.command(port, :erlang.term_to_binary({:parse, json}))
+
+    result = receive do
+      {^port, {:data, data}} ->
+        :erlang.binary_to_term(data)
+    after
+      5000 -> {:error, :timeout}
+    end
+
+    {:reply, result, %{state | current: next_current}}
+  end
+end
+----
+
+==== OCaml Parser (Port-based)
+
+[source,ocaml]
+----
+(* conversation_parser.ml *)
+open Alberto
+open Yojson.Safe
+
+type conversation = {
+  id: string;
+  title: string;
+  messages: (string * string) list;
+}
+
+let parse_claude_json json_str =
+  try
+    let open Yojson.Safe.Util in
+    let json = from_string json_str in
+    let id = json |> member "uuid" |> to_string in
+    let title = json |> member "name" |> to_string in
+    let messages = json
+      |> member "chat_messages"
+      |> to_list
+      |> List.map (fun msg ->
+          let sender = msg |> member "sender" |> to_string in
+          let text = msg |> member "text" |> to_string in
+          (sender, text))
+    in
+    `Ok (id, title, messages)
+  with _ -> `Error "Parse failed"
+
+let handle_request = function
+  | `Tuple [`Atom "parse"; `String json] ->
+      (match parse_claude_json json with
+       | `Ok (id, title, messages) ->
+           let msg_tuples = List.map (fun (s, t) ->
+             `Tuple [`String s; `String t]) messages
+           in
+           `Tuple [`Atom "ok";
+                   `Tuple [`String id; `String title; `List msg_tuples]]
+       | `Error e -> `Tuple [`Atom "error"; `String e])
+  | _ -> `Tuple [`Atom "error"; `String "Unknown request"]
+
+let () = Alberto.interact handle_request
+----
+
+== JSON Parsing in OCaml
+
+=== Overview
+
+OCaml has several JSON libraries with different trade-offs:
+
+1. **Yojson**: Low-level, fast, AST manipulation
+2. **Atdgen**: Type-safe, code generation from schemas
+3. **ppx_deriving_yojson**: Automatic deriving for OCaml types
+4. **Angstrom-based**: Parser combinators for JSON
+
+=== Yojson
+
+**Repository**: https://github.com/ocaml-community/yojson
+
+**Version**: 3.0.0 (latest)
+
+**Installation**: `opam install yojson`
+
+==== Variants
+
+[cols="1,2,3"]
+|===
+|Variant |Type |Use Case
+
+|`Yojson.Basic`
+|`type json = \| Null \| Bool of bool \| Int of int \| Float of float \| String of string \| Assoc of (string * json) list \| List of json list`
+|Standard JSON, OCaml int range
+
+|`Yojson.Safe`
+|Adds `\| Intlit of string`
+|Arbitrary-precision integers (as strings)
+
+|`Yojson.Raw`
+|Preserves key order
+|Exact JSON preservation
+|===
+
+==== Basic Usage
+
+[source,ocaml]
+----
+open Yojson.Safe
+
+(* Parse JSON string *)
+let json = from_string {| {"name": "Claude", "version": 3} |}
+
+(* Construct JSON *)
+let construct = `Assoc [
+  ("name", `String "Claude");
+  ("version", `Int 3);
+  ("messages", `List [`String "Hello"; `String "World"])
+]
+
+(* Pretty print *)
+let () = pretty_to_channel stdout construct
+----
+
+==== Yojson.Safe.Util Combinators
+
+[source,ocaml]
+----
+open Yojson.Safe.Util
+
+let parse_conversation json_str =
+  let json = Yojson.Safe.from_string json_str in
+
+  (* Extract fields using combinators *)
+  let id = json |> member "uuid" |> to_string in
+  let title = json |> member "name" |> to_string in
+  let created = json |> member "created_at" |> to_float in
+
+  (* Extract nested list *)
+  let messages = json
+    |> member "chat_messages"
+    |> to_list
+    |> List.map (fun msg ->
+        let sender = msg |> member "sender" |> to_string in
+        let text = msg |> member "text" |> to_string in
+        let ts = msg |> member "created_at" |> to_float in
+        (sender, text, ts))
+  in
+
+  {id; title; created; messages}
+----
+
+==== Strengths
+
+* Fast (fastest JSON parser for OCaml)
+* Simple API
+* Good for ad-hoc parsing
+* Well-documented
+
+==== Weaknesses
+
+* No type safety (runtime errors for wrong types)
+* Verbose field extraction
+* No schema validation
+
+=== Atdgen (Type-Safe JSON)
+
+**Repository**: https://atd.readthedocs.io/
+
+**Version**: 2.16.0 (latest)
+
+**Installation**: `opam install atdgen`
+
+==== Workflow
+
+1. Define schema in ATD (Adjustable Type Definitions) format
+2. Generate OCaml types and JSON serializers/deserializers
+3. Use generated code (compile-time type safety)
+
+==== Example
+
+===== Schema Definition (`conversation.atd`)
+
+[source,atd]
+----
+(* Type definitions for Claude conversation format *)
+
+type message = {
+  uuid: string;
+  text: string;
+  sender: string;
+  created_at: float;
+  ?attachments: attachment list option;
+}
+
+type attachment = {
+  file_name: string;
+  file_type: string;
+  file_size: int;
+}
+
+type conversation = {
+  uuid: string;
+  name: string;
+  created_at: float;
+  updated_at: float;
+  chat_messages: message list;
+}
+----
+
+===== Generated Code
+
+[source,bash]
+----
+# Generate OCaml types and JSON codec
+atdgen -t conversation.atd  # Generates conversation_t.ml/mli
+atdgen -j conversation.atd  # Generates conversation_j.ml/mli
+----
+
+===== Usage
+
+[source,ocaml]
+----
+open Conversation_j
+
+(* Parse JSON with type safety *)
+let parse_conversation json_str =
+  try
+    let conv = conversation_of_string json_str in
+    Printf.printf "Conversation: %s\n" conv.name;
+    Printf.printf "Messages: %d\n" (List.length conv.chat_messages);
+    Some conv
+  with Atdgen_runtime.Oj_run.Error (msg, _) ->
+    Printf.eprintf "Parse error: %s\n" msg;
+    None
+
+(* Serialize to JSON *)
+let serialize conv =
+  string_of_conversation conv
+----
+
+==== Strengths
+
+* **Type safety**: Compile-time guarantees
+* **Schema-driven**: Self-documenting
+* **Automatic codegen**: No manual serialization code
+* **Validation**: Schema ensures correct structure
+* **Bidirectional**: Parsing and serialization
+
+==== Weaknesses
+
+* Build complexity (code generation step)
+* Schema evolution requires regeneration
+* Less flexible for dynamic/unknown schemas
+
+==== JSON Schema Integration
+
+[source,bash]
+----
+# Convert JSON Schema to ATD
+jsonschema2atd schema.json > conversation.atd
+
+# Generate OpenAPI/JSON Schema from ATD
+atdcat -jsonschema conversation.atd
+----
+
+=== ppx_deriving_yojson
+
+**Repository**: https://github.com/ocaml-ppx/ppx_deriving_yojson
+
+**Installation**: `opam install ppx_deriving_yojson`
+
+==== Approach
+
+Automatically generate Yojson serializers/deserializers from OCaml type definitions using PPX (PreProcessor eXtensions).
+
+==== Example
+
+[source,ocaml]
+----
+type message = {
+  uuid: string;
+  text: string;
+  sender: string;
+  created_at: float;
+  attachments: attachment list option [@default None];
+} [@@deriving yojson]
+
+and attachment = {
+  file_name: string;
+  file_type: string;
+  file_size: int;
+} [@@deriving yojson]
+
+type conversation = {
+  uuid: string;
+  name: string;
+  created_at: float;
+  updated_at: float;
+  chat_messages: message list;
+} [@@deriving yojson]
+
+(* Automatically generated functions:
+   - message_of_yojson : Yojson.Safe.t -> (message, string) result
+   - message_to_yojson : message -> Yojson.Safe.t
+   - conversation_of_yojson : Yojson.Safe.t -> (conversation, string) result
+   - conversation_to_yojson : conversation -> Yojson.Safe.t
+*)
+
+(* Usage *)
+let parse_conversation json_str =
+  let open Yojson.Safe in
+  match from_string json_str |> conversation_of_yojson with
+  | Ok conv -> Some conv
+  | Error msg ->
+      Printf.eprintf "Error: %s\n" msg;
+      None
+----
+
+==== Strengths
+
+* Type definitions in OCaml (no separate schema file)
+* Automatic codegen via PPX
+* Works with existing Yojson code
+* Good error messages
+
+==== Weaknesses
+
+* PPX dependency (compilation complexity)
+* Less control than manual parsing
+* Error messages can be cryptic for deeply nested structures
+
+=== Angstrom JSON Parser
+
+Angstrom can parse JSON directly using parser combinators.
+
+[source,ocaml]
+----
+open Angstrom
+
+let is_whitespace = function
+  | '\x20' | '\x0a' | '\x0d' | '\x09' -> true
+  | _ -> false
+
+let ws = skip_while is_whitespace
+
+let char c = ws *> char c <* ws
+
+let string_literal =
+  char '"' *>
+  take_while (function '"' -> false | _ -> true) <*
+  char '"'
+
+let number =
+  take_while1 (function '0'..'9' | '.' | '-' | 'e' | 'E' -> true | _ -> false)
+  >>| float_of_string
+
+(* Recursive JSON parser *)
+let rec json_value () =
+  ws *> choice [
+    (string_literal >>| fun s -> `String s);
+    (number >>| fun n -> `Float n);
+    (string "true" *> return (`Bool true));
+    (string "false" *> return (`Bool false));
+    (string "null" *> return `Null);
+    (json_array ());
+    (json_object ());
+  ]
+
+and json_array () =
+  char '[' *>
+  sep_by (char ',') (json_value ()) <*
+  char ']' >>| fun lst -> `List lst
+
+and json_object () =
+  let pair = lift2 (fun k v -> (k, v))
+    (string_literal <* char ':')
+    (json_value ())
+  in
+  char '{' *>
+  sep_by (char ',') pair <*
+  char '}' >>| fun pairs -> `Assoc pairs
+
+let parse_json str =
+  parse_string ~consume:All (json_value ()) str
+----
+
+==== Strengths
+
+* Full control over parsing
+* Can handle non-standard JSON variants
+* Incremental parsing
+* Composable with other Angstrom parsers
+
+==== Weaknesses
+
+* More code than using Yojson
+* No type safety (produces `Yojson.Safe.t` variant)
+* Slower than Yojson's optimized parser
+
+**Recommendation**: Use Yojson for JSON parsing, not Angstrom (Yojson is faster and battle-tested for JSON specifically).
+
+=== Recommended JSON Strategy for Anamnesis
+
+==== Approach
+
+1. **Define schemas** in ATD format for known conversation formats (Claude, ChatGPT)
+2. **Generate types** with Atdgen for type-safe parsing
+3. **Use Yojson** for exploratory parsing of new/unknown formats
+4. **Validate** with Atdgen, fall back to Yojson for flexibility
+
+==== Example Architecture
+
+[source,ocaml]
+----
+(* conversation_formats.ml *)
+
+module type ConversationFormat = sig
+  type t
+  val parse : string -> (t, string) result
+  val to_generic : t -> GenericConversation.t
+end
+
+module ClaudeFormat : ConversationFormat = struct
+  type t = Claude_j.conversation
+
+  let parse json_str =
+    try Ok (Claude_j.conversation_of_string json_str)
+    with Atdgen_runtime.Oj_run.Error (msg, _) -> Error msg
+
+  let to_generic claude =
+    GenericConversation.{
+      id = claude.uuid;
+      title = claude.name;
+      messages = List.map (fun msg -> {
+        id = msg.uuid;
+        sender = msg.sender;
+        text = msg.text;
+        timestamp = msg.created_at;
+      }) claude.chat_messages;
+    }
+end
+
+module ChatGPTFormat : ConversationFormat = struct
+  type t = ChatGPT_j.conversation
+
+  let parse json_str =
+    try Ok (ChatGPT_j.conversation_of_string json_str)
+    with Atdgen_runtime.Oj_run.Error (msg, _) -> Error msg
+
+  let to_generic chatgpt =
+    (* Convert ChatGPT format to generic *)
+    (* ... *)
+end
+
+(* Format registry *)
+module FormatRegistry = struct
+  let formats = [
+    ("claude", (module ClaudeFormat : ConversationFormat));
+    ("chatgpt", (module ChatGPTFormat : ConversationFormat));
+  ]
+
+  let detect_format json_str =
+    (* Auto-detect format based on JSON structure *)
+    let open Yojson.Safe.Util in
+    let json = Yojson.Safe.from_string json_str in
+    if member "chat_messages" json <> `Null then Some "claude"
+    else if member "mapping" json <> `Null then Some "chatgpt"
+    else None
+
+  let parse json_str =
+    match detect_format json_str with
+    | Some format_name ->
+        let (module Format : ConversationFormat) =
+          List.assoc format_name formats in
+        (match Format.parse json_str with
+         | Ok conv -> Ok (Format.to_generic conv)
+         | Error e -> Error e)
+    | None -> Error "Unknown format"
+end
+----
+
+== Architecture Patterns for Multi-Format Parsers
+
+=== Overview
+
+Anamnesis must parse multiple conversation formats (Claude, ChatGPT, Mistral, etc.). This requires an extensible architecture.
+
+=== Design Principles
+
+1. **Modular**: Each format is a separate module
+2. **Extensible**: Easy to add new formats
+3. **Type-safe**: Compile-time guarantees where possible
+4. **Fault-tolerant**: Parser failures don't crash system
+5. **Generic**: Normalize to common representation
+
+=== Pattern 1: Format Registry (Recommended)
+
+==== Architecture
+
+----
+┌─────────────────────────────────────────────┐
+│  Format Registry                            │
+│  ┌───────────────────────────────────────┐  │
+│  │  detect_format(json) -> format_name   │  │
+│  └───────────────────────────────────────┘  │
+│                                             │
+│  ┌───────────┬────────────┬──────────────┐  │
+│  │ Claude    │ ChatGPT    │ Mistral      │  │
+│  │ Format    │ Format     │ Format       │  │
+│  ├───────────┼────────────┼──────────────┤  │
+│  │ parse()   │ parse()    │ parse()      │  │
+│  │ validate()│ validate() │ validate()   │  │
+│  │ to_generic│ to_generic │ to_generic   │  │
+│  └───────────┴────────────┴──────────────┘  │
+│                                             │
+│  ┌───────────────────────────────────────┐  │
+│  │  GenericConversation                  │  │
+│  │  - id, title, messages, metadata      │  │
+│  └───────────────────────────────────────┘  │
+└─────────────────────────────────────────────┘
+----
+
+==== Implementation
+
+[source,ocaml]
+----
+(* generic_conversation.ml *)
+module GenericConversation = struct
+  type message = {
+    id: string;
+    sender: string;
+    text: string;
+    timestamp: float;
+    metadata: (string * string) list;
+  }
+
+  type t = {
+    id: string;
+    title: string;
+    created_at: float;
+    updated_at: float;
+    messages: message list;
+    source_format: string;
+    metadata: (string * string) list;
+  }
+end
+
+(* format_interface.ml *)
+module type ConversationFormat = sig
+  type t
+  val format_name : string
+  val parse : string -> (t, string) result
+  val validate : t -> (unit, string) result
+  val to_generic : t -> GenericConversation.t
+  val detect : Yojson.Safe.t -> bool
+end
+
+(* claude_format.ml *)
+module ClaudeFormat : ConversationFormat = struct
+  type t = Claude_j.conversation
+
+  let format_name = "claude"
+
+  let detect json =
+    let open Yojson.Safe.Util in
+    try
+      let _ = json |> member "uuid" in
+      let _ = json |> member "chat_messages" in
+      true
+    with _ -> false
+
+  let parse json_str =
+    try Ok (Claude_j.conversation_of_string json_str)
+    with Atdgen_runtime.Oj_run.Error (msg, _) -> Error msg
+
+  let validate conv =
+    if String.length conv.uuid = 0 then Error "Missing UUID"
+    else if List.length conv.chat_messages = 0 then Error "No messages"
+    else Ok ()
+
+  let to_generic conv =
+    GenericConversation.{
+      id = conv.uuid;
+      title = conv.name;
+      created_at = conv.created_at;
+      updated_at = conv.updated_at;
+      messages = List.map (fun msg -> {
+        id = msg.uuid;
+        sender = msg.sender;
+        text = msg.text;
+        timestamp = msg.created_at;
+        metadata = [];
+      }) conv.chat_messages;
+      source_format = format_name;
+      metadata = [];
+    }
+end
+
+(* format_registry.ml *)
+module FormatRegistry = struct
+  let formats : (module ConversationFormat) list ref = ref []
+
+  let register (module F : ConversationFormat) =
+    formats := (module F) :: !formats
+
+  let () =
+    register (module ClaudeFormat);
+    register (module ChatGPTFormat);
+    register (module MistralFormat)
+
+  let detect_format json =
+    let rec try_formats = function
+      | [] -> None
+      | (module F : ConversationFormat) :: rest ->
+          if F.detect json then Some (module F : ConversationFormat)
+          else try_formats rest
+    in
+    try_formats !formats
+
+  let parse json_str =
+    try
+      let json = Yojson.Safe.from_string json_str in
+      match detect_format json with
+      | Some (module F) ->
+          (match F.parse json_str with
+           | Ok conv ->
+               (match F.validate conv with
+                | Ok () -> Ok (F.to_generic conv)
+                | Error e -> Error ("Validation failed: " ^ e))
+           | Error e -> Error ("Parse failed: " ^ e))
+      | None -> Error "Unknown format"
+    with Yojson.Json_error msg -> Error ("Invalid JSON: " ^ msg)
+end
+----
+
+==== Strengths
+
+* Easy to add new formats (implement interface, register)
+* Automatic format detection
+* Type-safe within each format
+* Centralized error handling
+
+==== Usage from Elixir (via Port)
+
+[source,ocaml]
+----
+(* main.ml - Port entry point *)
+open Alberto
+
+let handle_request = function
+  | `Tuple [`Atom "parse"; `String json_str] ->
+      (match FormatRegistry.parse json_str with
+       | Ok generic ->
+           `Tuple [
+             `Atom "ok";
+             `String generic.id;
+             `String generic.title;
+             `List (List.map (fun msg ->
+               `Tuple [`String msg.sender; `String msg.text]
+             ) generic.messages)
+           ]
+       | Error e -> `Tuple [`Atom "error"; `String e])
+  | _ -> `Tuple [`Atom "error"; `String "Unknown command"]
+
+let () = Alberto.interact handle_request
+----
+
+=== Pattern 2: Type-Driven with GADTs
+
+Use GADTs for type-safe format tagging.
+
+[source,ocaml]
+----
+type _ format =
+  | Claude : Claude_j.conversation format
+  | ChatGPT : ChatGPT_j.conversation format
+  | Mistral : Mistral_j.conversation format
+
+let parse : type a. a format -> string -> (a, string) result =
+  fun fmt json_str ->
+    match fmt with
+    | Claude ->
+        (try Ok (Claude_j.conversation_of_string json_str)
+         with e -> Error (Printexc.to_string e))
+    | ChatGPT ->
+        (try Ok (ChatGPT_j.conversation_of_string json_str)
+         with e -> Error (Printexc.to_string e))
+    | Mistral ->
+        (try Ok (Mistral_j.conversation_of_string json_str)
+         with e -> Error (Printexc.to_string e))
+
+let to_generic : type a. a format -> a -> GenericConversation.t =
+  fun fmt conv ->
+    match fmt with
+    | Claude -> ClaudeFormat.to_generic conv
+    | ChatGPT -> ChatGPTFormat.to_generic conv
+    | Mistral -> MistralFormat.to_generic conv
+----
+
+==== Strengths
+
+* Type-safe format handling
+* Compiler verifies all format cases
+* No runtime format registry
+
+==== Weaknesses
+
+* Harder to extend dynamically
+* More complex type signatures
+
+=== Pattern 3: Functor-Based Composition
+
+[source,ocaml]
+----
+module type JSONSchema = sig
+  val schema : string (* ATD schema *)
+  val format_name : string
+end
+
+module MakeFormat(Schema : JSONSchema) = struct
+  (* Generate parser from schema *)
+  let parse json_str =
+    (* Use Atdgen-generated parser *)
+    (* ... *)
+end
+
+module ClaudeFormat = MakeFormat(struct
+  let schema = {|
+    type conversation = {
+      uuid: string;
+      name: string;
+      chat_messages: message list;
+    }
+  |}
+  let format_name = "claude"
+end)
+----
+
+==== Strengths
+
+* Reusable format creation logic
+* Parameterized by schema
+
+==== Weaknesses
+
+* Complex module system usage
+* Less flexible than registry pattern
+
+=== Recommended Architecture for Anamnesis
+
+**Use Pattern 1 (Format Registry)** because:
+
+1. **Extensibility**: Easy to add formats (zotero, WhatsApp, LinkedIn in future)
+2. **Auto-detection**: No manual format specification from Elixir
+3. **Fault tolerance**: Format failures are isolated
+4. **Simplicity**: Clear module boundaries
+
+== Code Examples
+
+=== Complete Anamnesis Parser Example
+
+==== Directory Structure
+
+----
+parser/
+├── dune-project
+├── dune
+├── schemas/
+│   ├── claude.atd
+│   ├── chatgpt.atd
+│   └── generic.atd
+├── lib/
+│   ├── generic_conversation.ml
+│   ├── format_interface.ml
+│   ├── claude_format.ml
+│   ├── chatgpt_format.ml
+│   └── format_registry.ml
+└── bin/
+    └── conversation_parser.ml
+----
+
+==== schemas/claude.atd
+
+[source,atd]
+----
+type attachment = {
+  file_name: string;
+  file_type: string;
+  file_size: int;
+  ?extracted_content: string option;
+}
+
+type message = {
+  uuid: string;
+  text: string;
+  sender: string;  (* "human" or "assistant" *)
+  created_at: float;
+  updated_at: float;
+  ?attachments: attachment list option;
+}
+
+type conversation = {
+  uuid: string;
+  name: string;
+  created_at: float;
+  updated_at: float;
+  chat_messages: message list;
+}
+----
+
+==== schemas/generic.atd
+
+[source,atd]
+----
+type message = {
+  id: string;
+  sender: string;
+  text: string;
+  timestamp: float;
+  metadata: (string * string) list;
+}
+
+type conversation = {
+  id: string;
+  title: string;
+  created_at: float;
+  updated_at: float;
+  messages: message list;
+  source_format: string;
+  metadata: (string * string) list;
+}
+----
+
+==== lib/format_interface.ml
+
+[source,ocaml]
+----
+module type ConversationFormat = sig
+  type t
+  val format_name : string
+  val parse : string -> (t, string) result
+  val validate : t -> (unit, string) result
+  val to_generic : t -> Generic_t.conversation
+  val detect : Yojson.Safe.t -> bool
+end
+----
+
+==== lib/claude_format.ml
+
+[source,ocaml]
+----
+open Format_interface
+
+module ClaudeFormat : ConversationFormat = struct
+  type t = Claude_t.conversation
+
+  let format_name = "claude"
+
+  let detect json =
+    let open Yojson.Safe.Util in
+    try
+      let _ = json |> member "uuid" |> to_string in
+      let _ = json |> member "chat_messages" |> to_list in
+      let _ = json |> member "name" |> to_string in
+      true
+    with _ -> false
+
+  let parse json_str =
+    try
+      Ok (Claude_j.conversation_of_string json_str)
+    with
+    | Atdgen_runtime.Oj_run.Error (msg, _) -> Error ("Parse error: " ^ msg)
+    | e -> Error ("Unexpected error: " ^ Printexc.to_string e)
+
+  let validate conv =
+    if String.length conv.uuid = 0 then
+      Error "Missing UUID"
+    else if String.length conv.name = 0 then
+      Error "Missing name"
+    else if List.length conv.chat_messages = 0 then
+      Error "No messages"
+    else if conv.created_at <= 0.0 then
+      Error "Invalid created_at timestamp"
+    else
+      Ok ()
+
+  let to_generic conv =
+    let open Generic_t in
+    {
+      id = conv.uuid;
+      title = conv.name;
+      created_at = conv.created_at;
+      updated_at = conv.updated_at;
+      messages = List.map (fun msg -> {
+        id = msg.uuid;
+        sender = msg.sender;
+        text = msg.text;
+        timestamp = msg.created_at;
+        metadata = [
+          ("updated_at", string_of_float msg.updated_at);
+        ];
+      }) conv.chat_messages;
+      source_format = format_name;
+      metadata = [];
+    }
+end
+----
+
+==== lib/format_registry.ml
+
+[source,ocaml]
+----
+open Format_interface
+
+module FormatRegistry = struct
+  let formats : (module ConversationFormat) list ref = ref []
+
+  let register (module F : ConversationFormat) =
+    Printf.printf "Registering format: %s\n" F.format_name;
+    formats := (module F) :: !formats
+
+  let () =
+    register (module Claude_format.ClaudeFormat);
+    (* register (module Chatgpt_format.ChatGPTFormat); *)
+
+  let detect_format json =
+    let rec try_formats = function
+      | [] -> None
+      | (module F : ConversationFormat) :: rest ->
+          if F.detect json then begin
+            Printf.printf "Detected format: %s\n" F.format_name;
+            Some (module F : ConversationFormat)
+          end else
+            try_formats rest
+    in
+    try_formats !formats
+
+  let parse json_str =
+    try
+      let json = Yojson.Safe.from_string json_str in
+      match detect_format json with
+      | Some (module F) ->
+          Printf.printf "Parsing as %s format\n" F.format_name;
+          (match F.parse json_str with
+           | Ok conv ->
+               (match F.validate conv with
+                | Ok () ->
+                    Printf.printf "Validation succeeded\n";
+                    Ok (F.to_generic conv)
+                | Error e -> Error ("Validation failed: " ^ e))
+           | Error e -> Error ("Parse failed: " ^ e))
+      | None -> Error "Unknown format (no detector matched)"
+    with
+    | Yojson.Json_error msg -> Error ("Invalid JSON: " ^ msg)
+    | e -> Error ("Unexpected error: " ^ Printexc.to_string e)
+end
+----
+
+==== bin/conversation_parser.ml
+
+[source,ocaml]
+----
+(* Port-based entry point *)
+open Alberto
+open Format_registry
+
+let encode_message msg =
+  let open Generic_t in
+  `Tuple [
+    `String msg.id;
+    `String msg.sender;
+    `String msg.text;
+    `Float msg.timestamp;
+  ]
+
+let encode_conversation conv =
+  let open Generic_t in
+  `Tuple [
+    `String conv.id;
+    `String conv.title;
+    `Float conv.created_at;
+    `Float conv.updated_at;
+    `String conv.source_format;
+    `List (List.map encode_message conv.messages);
+  ]
+
+let handle_request = function
+  | `Tuple [`Atom "parse"; `String json_str] ->
+      (match FormatRegistry.parse json_str with
+       | Ok generic ->
+           `Tuple [`Atom "ok"; encode_conversation generic]
+       | Error e ->
+           Printf.eprintf "Parse error: %s\n" e;
+           `Tuple [`Atom "error"; `String e])
+
+  | `Tuple [`Atom "ping"] ->
+      `Tuple [`Atom "pong"]
+
+  | _ ->
+      `Tuple [`Atom "error"; `String "Unknown command"]
+
+let () =
+  Printf.printf "Conversation parser started\n";
+  flush stdout;
+  Alberto.interact handle_request
+----
+
+==== dune
+
+[source,dune]
+----
+(executable
+ (name conversation_parser)
+ (public_name conversation_parser)
+ (libraries alberto yojson atdgen-runtime)
+ (modules conversation_parser))
+
+(library
+ (name parser_lib)
+ (libraries yojson atdgen-runtime)
+ (modules generic_t generic_j claude_t claude_j format_interface
+          claude_format format_registry))
+
+; Generate OCaml types from ATD schemas
+(rule
+ (targets claude_t.ml claude_t.mli)
+ (deps schemas/claude.atd)
+ (action (run atdgen -t %{deps})))
+
+(rule
+ (targets claude_j.ml claude_j.mli)
+ (deps schemas/claude.atd)
+ (action (run atdgen -j %{deps})))
+
+(rule
+ (targets generic_t.ml generic_t.mli)
+ (deps schemas/generic.atd)
+ (action (run atdgen -t %{deps})))
+
+(rule
+ (targets generic_j.ml generic_j.mli)
+ (deps schemas/generic.atd)
+ (action (run atdgen -j %{deps})))
+----
+
+==== Elixir Integration
+
+[source,elixir]
+----
+defmodule Anamnesis.ConversationParser do
+  @moduledoc """
+  Elixir interface to OCaml conversation parser via Erlang ports.
+  """
+
+  use GenServer
+  require Logger
+
+  @pool_size 4
+  @timeout 10_000
+
+  # Client API
+
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @doc """
+  Parse a conversation JSON string.
+  Returns {:ok, conversation_map} or {:error, reason}.
+  """
+  def parse_conversation(json_string, timeout \\ @timeout) do
+    GenServer.call(__MODULE__, {:parse, json_string}, timeout)
+  end
+
+  def ping do
+    GenServer.call(__MODULE__, :ping, 1000)
+  end
+
+  # Server Callbacks
+
+  def init(_opts) do
+    parser_path = Application.app_dir(:anamnesis, "priv/conversation_parser")
+
+    # Start pool of parser ports
+    ports = for i <- 1..@pool_size do
+      Logger.info("Starting parser port #{i}")
+      Port.open(
+        {:spawn_executable, parser_path},
+        [:binary, packet: 4]
+      )
+    end
+
+    {:ok, %{ports: ports, current: 0}}
+  end
+
+  def handle_call(:ping, _from, state) do
+    port = Enum.at(state.ports, state.current)
+
+    Port.command(port, :erlang.term_to_binary({:ping}))
+
+    result = receive do
+      {^port, {:data, data}} ->
+        case :erlang.binary_to_term(data) do
+          {:pong} -> :pong
+          other -> {:error, {:unexpected, other}}
+        end
+    after
+      1000 -> {:error, :timeout}
+    end
+
+    {:reply, result, state}
+  end
+
+  def handle_call({:parse, json_string}, _from, state) do
+    # Round-robin port selection
+    port = Enum.at(state.ports, state.current)
+    next_current = rem(state.current + 1, @pool_size)
+
+    # Send parse request to OCaml
+    Port.command(port, :erlang.term_to_binary({:parse, json_string}))
+
+    # Wait for response
+    result = receive do
+      {^port, {:data, data}} ->
+        case :erlang.binary_to_term(data) do
+          {:ok, {id, title, created_at, updated_at, format, messages}} ->
+            {:ok, %{
+              id: id,
+              title: title,
+              created_at: created_at,
+              updated_at: updated_at,
+              source_format: format,
+              messages: Enum.map(messages, fn {msg_id, sender, text, ts} ->
+                %{
+                  id: msg_id,
+                  sender: sender,
+                  text: text,
+                  timestamp: ts
+                }
+              end)
+            }}
+
+          {:error, reason} ->
+            {:error, reason}
+
+          other ->
+            {:error, {:unexpected_response, other}}
+        end
+    after
+      @timeout -> {:error, :timeout}
+    end
+
+    {:reply, result, %{state | current: next_current}}
+  end
+
+  def terminate(_reason, state) do
+    # Close all ports
+    Enum.each(state.ports, &Port.close/1)
+    :ok
+  end
+end
+----
+
+==== Build and Test
+
+[source,bash]
+----
+# In parser/ directory
+
+# Install dependencies
+opam install dune alberto yojson atdgen
+
+# Build
+dune build
+
+# Test
+echo '{"uuid":"123","name":"Test","created_at":1234567890.0,"updated_at":1234567890.0,"chat_messages":[{"uuid":"msg1","text":"Hello","sender":"human","created_at":1234567890.0,"updated_at":1234567890.0}]}' | ./_build/default/bin/conversation_parser.exe
+----
+
+[source,elixir]
+----
+# In Elixir project
+
+# Start the parser
+{:ok, _pid} = Anamnesis.ConversationParser.start_link([])
+
+# Ping test
+:pong = Anamnesis.ConversationParser.ping()
+
+# Parse test
+json = File.read!("test/fixtures/claude_conversation.json")
+{:ok, conversation} = Anamnesis.ConversationParser.parse_conversation(json)
+
+IO.inspect(conversation)
+----
+
+== Performance Considerations
+
+=== Benchmarking Strategy
+
+[source,ocaml]
+----
+(* benchmark.ml *)
+let benchmark_format format_name json_str iterations =
+  let start = Unix.gettimeofday () in
+
+  for _ = 1 to iterations do
+    match Format_registry.FormatRegistry.parse json_str with
+    | Ok _ -> ()
+    | Error e -> Printf.eprintf "Error: %s\n" e
+  done;
+
+  let elapsed = Unix.gettimeofday () -. start in
+  let per_parse = (elapsed /. float_of_int iterations) *. 1000.0 in
+
+  Printf.printf "%s: %.3f ms/parse (%d iterations)\n"
+    format_name per_parse iterations
+
+let () =
+  let claude_json = {| ... |} in
+  benchmark_format "Claude" claude_json 1000
+----
+
+=== Expected Performance
+
+[cols="1,2,2"]
+|===
+|Operation |Latency |Throughput
+
+|Parse Claude JSON (Yojson)
+|~1-5ms (small conv)
+|200-1000 conv/sec
+
+|Parse Claude JSON (Atdgen)
+|~2-10ms (small conv)
+|100-500 conv/sec
+
+|Port round-trip (empty)
+|~50-100μs
+|10,000 ops/sec
+
+|Port round-trip (1KB JSON)
+|~100-200μs
+|5,000-10,000 ops/sec
+
+|Port round-trip (100KB JSON)
+|~5-20ms
+|50-200 ops/sec
+|===
+
+NOTE: Benchmarks vary significantly based on hardware, JSON size, and message count.
+
+=== Optimization Strategies
+
+1. **Batch processing**: Parse multiple conversations per port call
+2. **Streaming**: Use Angstrom's incremental parsing for large files
+3. **Lazy parsing**: Only parse needed fields (use Yojson for initial triage)
+4. **Caching**: Memoize parsed schemas and compiled parsers
+5. **Parallel ports**: Scale horizontally with port pool
+
+== Recommendations
+
+=== For Anamnesis Milestone 1
+
+**Goal**: Parse single Claude conversation JSON → Virtuoso RDF triples
+
+==== Technology Stack
+
+[cols="1,2"]
+|===
+|Component |Choice
+
+|Parser Combinators
+|**Angstrom** (for custom formats later)
+
+|JSON Parsing
+|**Yojson + Atdgen** (type-safe Claude schema)
+
+|OCaml-Elixir Bridge
+|**Erlang Ports with Alberto**
+
+|Lexer (if needed)
+|**Sedlex** (Unicode support)
+|===
+
+==== Implementation Plan
+
+1. **Define Claude schema** in ATD format (`claude.atd`)
+2. **Generate OCaml types** with Atdgen
+3. **Implement ClaudeFormat** module with validation
+4. **Create port-based interface** using Alberto
+5. **Build Elixir GenServer** wrapper for port pool
+6. **Test with real Claude conversations** from proving ground
+7. **Profile and optimize** parsing pipeline
+
+==== Architecture
+
+----
+Claude JSON
+    ↓
+[Elixir Port] → [OCaml Parser] → [Atdgen] → [Generic Conversation]
+    ↓                                               ↓
+[Elixir]                                    [Alberto ETF]
+    ↓                                               ↓
+[GenServer]  ←──────────────────────────────  [Port Response]
+    ↓
+[RDF Converter (Julia via Julia.jl)]
+    ↓
+[Virtuoso SPARQL Store]
+----
+
+=== For Future Milestones
+
+==== Multi-Format Support
+
+1. Implement **FormatRegistry** pattern
+2. Add **ChatGPTFormat**, **MistralFormat** modules
+3. Implement **auto-detection** logic
+4. Add **format-specific validation**
+
+==== Advanced Parsing
+
+1. Use **Angstrom** for non-JSON formats (plaintext, XML)
+2. Implement **streaming parser** for large logs
+3. Add **incremental parsing** with checkpoints
+4. Implement **parser recovery** for malformed data
+
+==== Performance Optimization
+
+1. Profile with real workload from proving ground
+2. Consider **NIFs** if ports are bottleneck (measure first!)
+3. Implement **parse result caching** in Elixir
+4. Use **ETS tables** for parsed conversation metadata
+
+==== Extensibility
+
+1. Plugin system for third-party formats
+2. DSL for defining new format schemas
+3. Automatic ATD generation from JSON Schema
+4. Format migration tools
+
+== Testing Strategy
+
+=== Unit Tests (OCaml)
+
+[source,ocaml]
+----
+(* test_claude_format.ml *)
+open OUnit2
+
+let test_parse_valid_conversation _ =
+  let json = {|
+    {
+      "uuid": "123",
+      "name": "Test Conversation",
+      "created_at": 1234567890.0,
+      "updated_at": 1234567890.0,
+      "chat_messages": [
+        {
+          "uuid": "msg1",
+          "text": "Hello",
+          "sender": "human",
+          "created_at": 1234567890.0,
+          "updated_at": 1234567890.0
+        }
+      ]
+    }
+  |} in
+  match Claude_format.ClaudeFormat.parse json with
+  | Ok conv ->
+      assert_equal "123" conv.uuid;
+      assert_equal "Test Conversation" conv.name;
+      assert_equal 1 (List.length conv.chat_messages)
+  | Error e -> assert_failure ("Parse failed: " ^ e)
+
+let test_parse_invalid_json _ =
+  let json = "not json" in
+  match Claude_format.ClaudeFormat.parse json with
+  | Ok _ -> assert_failure "Should have failed"
+  | Error _ -> ()  (* Expected *)
+
+let suite = "Claude Format Tests" >::: [
+  "parse_valid_conversation" >:: test_parse_valid_conversation;
+  "parse_invalid_json" >:: test_parse_invalid_json;
+]
+
+let () = run_test_tt_main suite
+----
+
+=== Integration Tests (Elixir)
+
+[source,elixir]
+----
+defmodule Anamnesis.ConversationParserTest do
+  use ExUnit.Case
+
+  setup do
+    {:ok, _pid} = Anamnesis.ConversationParser.start_link([])
+    :ok
+  end
+
+  test "ping pong" do
+    assert :pong == Anamnesis.ConversationParser.ping()
+  end
+
+  test "parse valid Claude conversation" do
+    json = File.read!("test/fixtures/claude_conversation.json")
+
+    assert {:ok, conversation} =
+      Anamnesis.ConversationParser.parse_conversation(json)
+
+    assert conversation.source_format == "claude"
+    assert conversation.title == "Test Conversation"
+    assert length(conversation.messages) > 0
+  end
+
+  test "parse invalid JSON" do
+    assert {:error, _reason} =
+      Anamnesis.ConversationParser.parse_conversation("not json")
+  end
+
+  test "concurrent parsing" do
+    json = File.read!("test/fixtures/claude_conversation.json")
+
+    tasks = for _ <- 1..10 do
+      Task.async(fn ->
+        Anamnesis.ConversationParser.parse_conversation(json)
+      end)
+    end
+
+    results = Task.await_many(tasks)
+    assert Enum.all?(results, fn
+      {:ok, _} -> true
+      _ -> false
+    end)
+  end
+end
+----
+
+=== Property-Based Testing
+
+[source,ocaml]
+----
+(* property_tests.ml using QCheck *)
+open QCheck
+
+let gen_message =
+  Gen.(map4 (fun uuid text sender ts ->
+    Claude_t.{uuid; text; sender; created_at = ts; updated_at = ts; attachments = None})
+    (string_size (1--100))
+    (string_size (1--1000))
+    (oneofl ["human"; "assistant"])
+    (float_range 0.0 2000000000.0))
+
+let gen_conversation =
+  Gen.(map5 (fun uuid name created updated msgs ->
+    Claude_t.{uuid; name; created_at = created; updated_at = updated;
+              chat_messages = msgs})
+    (string_size (1--100))
+    (string_size (1--100))
+    (float_range 0.0 2000000000.0)
+    (float_range 0.0 2000000000.0)
+    (list_size (1--100) gen_message))
+
+let test_roundtrip =
+  Test.make ~name:"parse . serialize = identity" gen_conversation
+    (fun conv ->
+      let json = Claude_j.string_of_conversation conv in
+      match Claude_j.conversation_of_string json with
+      | parsed -> conv = parsed
+      | exception _ -> false)
+
+let () = QCheck_runner.run_tests [test_roundtrip]
+----
+
+== Error Handling and Logging
+
+=== OCaml Error Handling
+
+[source,ocaml]
+----
+type parse_error =
+  | InvalidJSON of string
+  | ValidationFailed of string
+  | UnknownFormat
+  | ParseFailed of string
+
+let error_to_string = function
+  | InvalidJSON msg -> Printf.sprintf "Invalid JSON: %s" msg
+  | ValidationFailed msg -> Printf.sprintf "Validation failed: %s" msg
+  | UnknownFormat -> "Unknown conversation format"
+  | ParseFailed msg -> Printf.sprintf "Parse failed: %s" msg
+
+let parse_with_error json_str =
+  try
+    let json = Yojson.Safe.from_string json_str in
+    match Format_registry.FormatRegistry.detect_format json with
+    | Some (module F) ->
+        (match F.parse json_str with
+         | Ok conv ->
+             (match F.validate conv with
+              | Ok () -> Ok (F.to_generic conv)
+              | Error e -> Error (ValidationFailed e))
+         | Error e -> Error (ParseFailed e))
+    | None -> Error UnknownFormat
+  with Yojson.Json_error msg -> Error (InvalidJSON msg)
+----
+
+=== Logging
+
+[source,ocaml]
+----
+module Log = struct
+  let debug msg = Printf.eprintf "[DEBUG] %s\n%!" msg
+  let info msg = Printf.eprintf "[INFO] %s\n%!" msg
+  let error msg = Printf.eprintf "[ERROR] %s\n%!" msg
+
+  let parse_attempt format_name =
+    info (Printf.sprintf "Attempting to parse as %s" format_name)
+
+  let parse_success format_name msg_count =
+    info (Printf.sprintf "Successfully parsed %s conversation with %d messages"
+      format_name msg_count)
+
+  let parse_failure format_name reason =
+    error (Printf.sprintf "Failed to parse %s conversation: %s"
+      format_name reason)
+end
+----
+
+[source,elixir]
+----
+defmodule Anamnesis.ConversationParser do
+  require Logger
+
+  def handle_call({:parse, json_string}, _from, state) do
+    Logger.debug("Parsing conversation (size: #{byte_size(json_string)} bytes)")
+
+    port = Enum.at(state.ports, state.current)
+    Port.command(port, :erlang.term_to_binary({:parse, json_string}))
+
+    result = receive do
+      {^port, {:data, data}} ->
+        case :erlang.binary_to_term(data) do
+          {:ok, conversation} ->
+            Logger.info("Successfully parsed #{conversation.source_format} conversation: #{conversation.title}")
+            {:ok, conversation}
+
+          {:error, reason} ->
+            Logger.error("Parse failed: #{inspect(reason)}")
+            {:error, reason}
+        end
+    after
+      @timeout ->
+        Logger.error("Parser timeout after #{@timeout}ms")
+        {:error, :timeout}
+    end
+
+    {:reply, result, %{state | current: rem(state.current + 1, @pool_size)}}
+  end
+end
+----
+
+== Security Considerations
+
+=== Input Validation
+
+1. **JSON size limits**: Prevent DoS via huge JSON files
+2. **Message count limits**: Cap number of messages per conversation
+3. **String length limits**: Prevent memory exhaustion
+4. **Nesting depth limits**: Prevent stack overflow
+
+[source,ocaml]
+----
+let validate_size json_str =
+  let max_size = 10 * 1024 * 1024 in (* 10MB *)
+  if String.length json_str > max_size then
+    Error "JSON exceeds maximum size"
+  else
+    Ok ()
+
+let validate_conversation conv =
+  let max_messages = 10000 in
+  if List.length conv.messages > max_messages then
+    Error "Too many messages"
+  else
+    Ok ()
+----
+
+=== Port Security
+
+1. **Timeouts**: Always use timeouts for port calls
+2. **Process isolation**: Ports provide process-level isolation
+3. **Resource limits**: Use OS-level limits (ulimit) for parser processes
+4. **Input sanitization**: Validate all input before sending to parser
+
+== References
+
+=== OCaml Parser Combinators
+
+* Angstrom: https://github.com/inhabitedtype/angstrom
+* Angstrom Documentation: https://ocaml.org/p/angstrom/latest/doc/
+* Menhir: https://gallium.inria.fr/~fpottier/menhir/
+* Menhir Manual: https://pauillac.inria.fr/~fpottier/menhir/manual.html
+* Sedlex: https://github.com/ocaml-community/sedlex
+* MParser: http://harnold.org/software/ocaml-base/doc/MParser.html
+* Parser Combinators Tutorial: http://ocamlverse.net/content/monadic-parsers-angstrom.html
+
+=== OCaml-Elixir Integration
+
+* Elixir Interoperability (2025): http://elixir-lang.org/blog/2025/08/18/interop-and-portability/
+* Erlang Ports: https://hexdocs.pm/elixir/Port.html
+* Alberto (ETF Library): https://github.com/selectel/alberto
+* ocaml-erlang-port: https://github.com/EchoTeam/ocaml-erlang-port
+* erlangnode: https://github.com/jlouis/erlangnode
+* Elixir NIFs Tutorial: https://hexdocs.pm/elixir/Port.html
+
+=== JSON Parsing
+
+* Yojson: https://github.com/ocaml-community/yojson
+* Yojson Documentation: https://ocaml-community.github.io/yojson/
+* Atdgen: https://atd.readthedocs.io/
+* ppx_deriving_yojson: https://github.com/ocaml-ppx/ppx_deriving_yojson
+* Real World OCaml - JSON: https://dev.realworldocaml.org/json.html
+
+=== OCaml Language
+
+* Real World OCaml: https://dev.realworldocaml.org/
+* OCaml Manual: https://ocaml.org/manual/
+* GADTs Tutorial: https://dev.realworldocaml.org/gadts.html
+* OCaml Package Repository: https://ocaml.org/packages
+
+=== Architecture Patterns
+
+* Design Patterns for Parser Combinators: https://dl.acm.org/doi/10.1145/3471874.3472984
+* Functional Architecture: https://functional-architecture.org/
+
+=== Conversation Export Formats
+
+* ChatGPT Export Format: https://community.openai.com/t/questions-about-the-json-structures-in-the-exported-conversations-json/954762
+* Claude Export Tools: https://github.com/ryanschiang/claude-export
+
+== Appendix A: Conversation Format Examples
+
+=== Claude JSON Format
+
+[source,json]
+----
+{
+  "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+  "name": "Example Conversation",
+  "created_at": 1700000000.123,
+  "updated_at": 1700000100.456,
+  "chat_messages": [
+    {
+      "uuid": "msg-0001",
+      "text": "Hello Claude!",
+      "sender": "human",
+      "created_at": 1700000000.123,
+      "updated_at": 1700000000.123,
+      "attachments": []
+    },
+    {
+      "uuid": "msg-0002",
+      "text": "Hello! How can I help you today?",
+      "sender": "assistant",
+      "created_at": 1700000005.789,
+      "updated_at": 1700000005.789,
+      "attachments": []
+    }
+  ]
+}
+----
+
+=== ChatGPT JSON Format
+
+[source,json]
+----
+{
+  "id": "chatcmpl-123456",
+  "title": "Example Chat",
+  "create_time": 1700000000,
+  "update_time": 1700000100,
+  "mapping": {
+    "node-1": {
+      "id": "node-1",
+      "message": {
+        "id": "msg-1",
+        "author": {
+          "role": "user"
+        },
+        "content": {
+          "content_type": "text",
+          "parts": ["Hello ChatGPT!"]
+        },
+        "create_time": 1700000000
+      }
+    },
+    "node-2": {
+      "id": "node-2",
+      "parent": "node-1",
+      "message": {
+        "id": "msg-2",
+        "author": {
+          "role": "assistant"
+        },
+        "content": {
+          "content_type": "text",
+          "parts": ["Hello! How can I assist you today?"]
+        },
+        "create_time": 1700000005
+      }
+    }
+  }
+}
+----
+
+== Appendix B: Build Configuration
+
+=== dune-project
+
+[source,dune]
+----
+(lang dune 3.0)
+(name anamnesis_parser)
+
+(package
+ (name anamnesis_parser)
+ (synopsis "Conversation parser for Anamnesis")
+ (description "Multi-format conversation parser using Angstrom, Yojson, and Atdgen")
+ (depends
+  (ocaml (>= 4.14))
+  dune
+  angstrom
+  yojson
+  atdgen
+  atdgen-runtime
+  alberto
+  sedlex
+  (ounit2 :with-test)
+  (qcheck :with-test)))
+----
+
+=== Installation Script
+
+[source,bash]
+----
+#!/bin/bash
+# setup_parser.sh
+
+set -e
+
+echo "Installing OCaml and OPAM..."
+# Assumes OCaml and OPAM are already installed
+
+echo "Installing dependencies..."
+opam install -y dune angstrom yojson atdgen alberto sedlex ounit2 qcheck
+
+echo "Building parser..."
+cd parser
+dune build
+
+echo "Copying binary to Elixir priv directory..."
+mkdir -p ../priv
+cp _build/default/bin/conversation_parser.exe ../priv/conversation_parser
+
+echo "Done! Parser binary at: ../priv/conversation_parser"
+----
+
+== Conclusion
+
+This research document provides a comprehensive foundation for implementing the Anamnesis conversation parser using OCaml and Elixir.
+
+**Key Takeaways**:
+
+1. **Angstrom** provides the best parser combinator foundation
+2. **Erlang Ports** offer the safest OCaml-Elixir integration
+3. **Yojson + Atdgen** enable type-safe JSON parsing
+4. **Format Registry pattern** supports multi-LLM extensibility
+
+The recommended architecture balances performance, safety, type safety, and extensibility—critical for Anamnesis's long-term success as a multi-LLM conversation knowledge extraction system.
+
+**Next Steps**:
+
+1. Implement Milestone 1 (Claude JSON → RDF)
+2. Test with real conversations from proving ground
+3. Profile and optimize parsing pipeline
+4. Extend to additional conversation formats
+
+---
+
+Document Version: 1.0 +
+Last Updated: 2025-11-22 +
+Research conducted for: Anamnesis Project

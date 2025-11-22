@@ -1,0 +1,2055 @@
+= ReScript Visualization Ecosystem Research
+:author: Anamnesis Project
+:revdate: 2025-11-22
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+[abstract]
+--
+Comprehensive research into the ReScript visualization ecosystem for the Anamnesis project. This document evaluates libraries, patterns, and approaches for visualizing conversation graphs, artifact lifecycles, multi-project categorization, and episodic memory structures using ReScript's type-safe functional paradigm.
+--
+
+== Executive Summary
+
+=== Key Findings
+
+The ReScript visualization ecosystem is *nascent but viable*. While there are limited native ReScript visualization libraries, the language's excellent JavaScript interoperability and strong type system make it well-suited for creating type-safe bindings to established React visualization libraries.
+
+*Recommended Approach:* Use **rescript-recharts** for standard charts and timelines, with custom bindings to **Reagraph** (WebGL graph visualization) for conversation networks. Leverage ReScript's type system to ensure visualization code correctness at compile time.
+
+=== Recommended Stack
+
+[cols="1,2,2"]
+|===
+|Use Case |Library |Rationale
+
+|Graph Visualization
+|**Reagraph** (via custom bindings)
+|WebGL-based, handles 1000+ nodes, 2D/3D support, open source
+
+|Charts & Timelines
+|**rescript-recharts**
+|Mature ReScript bindings, declarative API, good for artifact lifecycles
+
+|UI Framework
+|**rescript-react** + **rescript-core**
+|Official bindings, excellent type safety, functional paradigm alignment
+
+|Alternative: Large Graphs
+|**Graph.gl** (via custom bindings)
+|deck.gl-based, handles 10,000+ nodes, built for large datasets
+
+|Gantt/Timeline (if needed)
+|**SVAR React Gantt** (via custom bindings)
+|Open source (Oct 2024), optimized for large datasets
+|===
+
+== Project Requirements Review
+
+The Anamnesis project requires visualization of:
+
+. **Conversation graphs** - Nodes (messages/artifacts), edges (relationships)
+. **Artifact lifecycles** - Timeline visualizations (created → modified → removed → evaluated)
+. **Multi-project categorization** - Fuzzy boundaries visualization
+. **Episodic memory structures** - Temporal and semantic relationships
+. **Interactive exploration** - Zoom, pan, filter, search capabilities
+
+=== Constraints
+
+* ✅ Type safety throughout (ReScript's strength)
+* ✅ Functional paradigm alignment
+* ✅ Performance for large conversation graphs (hundreds to thousands of nodes)
+* ✅ Academic rigor in implementation
+* ❌ NO PYTHON (not applicable to frontend)
+
+== ReScript Ecosystem Overview
+
+=== Language Characteristics
+
+ReScript is a robustly typed functional programming language that compiles to JavaScript with the following characteristics relevant to visualization:
+
+==== Type System Benefits
+
+* **100% type soundness** - Types guaranteed to never be wrong at compile time
+* **No null/undefined errors** - Explicit `option<'a>` types force handling of missing values
+* **Parametric polymorphism** - Generic types like `type coordinates<'a> = ('a, 'a, 'a)`
+* **Variant types** - Algebraic data types perfect for modeling graph nodes/edges
+* **Pattern matching** - Exhaustive matching ensures all cases handled
+
+==== Compilation & Performance
+
+* **Types erased at compile time** - No runtime overhead
+* **Compiles to readable JavaScript** - Easy debugging and integration
+* **External bindings inlined** - Zero-cost JavaScript interop
+* **Immutable by default** - Predictable data flow in complex visualizations
+
+=== Current Ecosystem State (2025)
+
+**rescript-core** (Standard Library)::
+New standard library released with ReScript 11, shipped as `@rescript/core`. Fusion of `rescript-js`, `rescript-promise`, and Belt. Will be included with `rescript` package in future versions.
+
+**rescript-react** (React Bindings)::
+Official React bindings with excellent type safety and idiomatic ReScript patterns. Compiles closely to idiomatic JS code, making integration seamless.
+
+**Package Ecosystem**::
+Limited but growing. Philosophy: leverage JavaScript ecosystem through typed bindings rather than reimplementing everything.
+
+== Graph Visualization Libraries
+
+=== Recommended: Reagraph (via Custom Bindings)
+
+**Status:** JavaScript library, requires custom ReScript bindings +
+**Repository:** https://github.com/reaviz/reagraph +
+**License:** Open Source +
+**Performance:** WebGL-based, handles 1000+ nodes efficiently
+
+==== Key Features
+
+* **2D & 3D support** - Flexible visualization modes
+* **WebGL rendering** - GPU-accelerated for high performance
+* **Force-directed layouts** - Automatic graph organization
+* **Complex clustering** - Group related nodes visually
+* **Built on D3** - Leverages battle-tested graph algorithms
+* **Motion animations** - Smooth transitions for state changes
+
+==== Architecture
+
+Reagraph uses:
+
+* **WebGL** for rendering (offloads to GPU)
+* **D3-force** for physics simulation
+* **React components** for declarative API
+* **TypeScript** definitions (can be translated to ReScript types)
+
+==== Example ReScript Binding Pattern
+
+[source,rescript]
+----
+// External binding to Reagraph
+module Reagraph = {
+  type node<'id> = {
+    id: 'id,
+    label: option<string>,
+    fill: option<string>,
+  }
+
+  type edge<'id> = {
+    source: 'id,
+    target: 'id,
+    label: option<string>,
+  }
+
+  type graphData<'id> = {
+    nodes: array<node<'id>>,
+    edges: array<edge<'id>>,
+  }
+
+  @module("reagraph") @react.component
+  external make: (
+    ~data: graphData<'id>,
+    ~layoutType: [#forceDirected2d | #forceDirected3d]=?,
+    ~draggable: bool=?,
+    ~onNodeClick: node<'id> => unit=?,
+  ) => React.element = "GraphCanvas"
+}
+
+// Usage in Anamnesis
+type messageId = string
+
+type conversationNode = {
+  id: messageId,
+  content: string,
+  speaker: [#Claude | #User | #Mistral | #ChatGPT],
+  timestamp: Js.Date.t,
+}
+
+type conversationEdge = {
+  source: messageId,
+  target: messageId,
+  relationType: [#Reply | #Reference | #Continuation],
+}
+
+@react.component
+let make = (~conversation: array<conversationNode>, ~edges: array<conversationEdge>) => {
+  let graphData: Reagraph.graphData<messageId> = {
+    nodes: conversation->Array.map(node => {
+      Reagraph.node({
+        id: node.id,
+        label: Some(node.content->String.slice(~start=0, ~end=50)),
+        fill: Some(switch node.speaker {
+        | #Claude => "#2078b4"
+        | #User => "#ff7f0e"
+        | #Mistral => "#2ca02c"
+        | #ChatGPT => "#d62728"
+        }),
+      })
+    }),
+    edges: edges->Array.map(edge => {
+      Reagraph.edge({
+        source: edge.source,
+        target: edge.target,
+        label: Some(switch edge.relationType {
+        | #Reply => "→"
+        | #Reference => "⇢"
+        | #Continuation => "⋯"
+        }),
+      })
+    }),
+  }
+
+  <Reagraph data={graphData} layoutType=#forceDirected2d draggable={true} />
+}
+----
+
+==== Type Safety Benefits
+
+* **Variant types** for node/edge types prevent invalid states
+* **Parametric polymorphism** allows generic graph structures
+* **Option types** force handling of missing labels/colors
+* **Exhaustive pattern matching** ensures all speaker types handled
+
+=== Alternative: Graph.gl (via Custom Bindings)
+
+**Status:** JavaScript library (deck.gl-based) +
+**Repository:** https://graph.gl/ +
+**Performance:** Handles 5,000-10,000+ nodes
+
+==== Key Features
+
+* **deck.gl powered** - Advanced WebGL framework
+* **Medium to large graphs** - Optimized for 10,000+ nodes
+* **React component** - Easy integration
+* **Utility functions** - Graph algorithms included
+
+==== When to Use
+
+* Conversation graphs exceeding 5,000 nodes
+* Need for deck.gl ecosystem integration
+* Advanced layer compositing requirements
+
+=== Alternative: D3 Direct Bindings
+
+**Status:** `rescript-d3` package exists (alpha, 4 years old) +
+**Repository:** https://www.npmjs.com/package/rescript-d3 +
+**Recommendation:** ⚠️ *Not recommended* - maintenance concerns
+
+==== Challenges with D3 Bindings
+
+===== Binding Coverage
+
+D3 API is *massive*. From research:
+
+> "Rendering code would remain in JS due to heavy usage of the D3 library. Rewriting it in ReScript would mean either adding typed bindings for every D3 function used, or using an untyped binding, which misses the whole point of migrating to ReScript (type-safety)."
+
+===== Better Approach
+
+Use higher-level libraries (Reagraph, Graph.gl) that wrap D3 internally and expose simpler APIs. Write bindings for the *component interface* rather than the entire D3 API.
+
+== Charting Libraries
+
+=== Recommended: rescript-recharts
+
+**Status:** Mature ReScript bindings +
+**Repository:** https://github.com/Minnozz/rescript-recharts +
+**NPM Packages:** `@minnozz/rescript-recharts`, `@float-capital/rescript-recharts` +
+**License:** Fork of `ahrefs/bs-recharts`, updated to new ReScript syntax
+
+==== Key Features
+
+* **Declarative API** - Idiomatic ReScript/React patterns
+* **Composable charts** - Bar, Line, Area, Pie, Scatter, etc.
+* **Responsive design** - ResponsiveContainer component
+* **SVG-based** - Clean, scalable rendering
+* **Battle-tested** - Used in production applications
+
+==== Example: Artifact Lifecycle Timeline
+
+[source,rescript]
+----
+module ArtifactTimeline = {
+  type artifactEvent = {
+    timestamp: float,
+    artifactId: string,
+    eventType: [#Created | #Modified | #Removed | #Evaluated],
+    value: int, // e.g., version number, evaluation score
+  }
+
+  @react.component
+  let make = (~events: array<artifactEvent>) => {
+    open Recharts
+
+    let data = events->Array.map(event => {
+      {
+        "time": event.timestamp,
+        "artifact": event.artifactId,
+        "value": event.value,
+        "type": switch event.eventType {
+        | #Created => "Created"
+        | #Modified => "Modified"
+        | #Removed => "Removed"
+        | #Evaluated => "Evaluated"
+        },
+      }
+    })
+
+    <ResponsiveContainer height={Px(400.)} width={Percentage(100.)}>
+      <LineChart data>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis
+          dataKey="time"
+          scale=#time
+          type_=#number
+          domain={[#auto, #auto]}
+        />
+        <YAxis />
+        <Tooltip />
+        <Legend />
+        <Line
+          type_=#monotone
+          dataKey="value"
+          stroke="#2078b4"
+          strokeWidth={2}
+          dot={true}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  }
+}
+----
+
+==== Available Chart Types
+
+* **Area Chart** - For showing trends over time
+* **Bar Chart** - Comparing discrete categories
+* **Line Chart** - Temporal data (artifact lifecycles)
+* **Scatter Chart** - Relationship visualization
+* **Pie/Radial Charts** - Proportional data
+* **Composed Charts** - Multiple chart types combined
+
+==== Type Safety Features
+
+[source,rescript]
+----
+// Type-safe props
+type height =
+  | Px(float)
+  | Percentage(float)
+
+type scale =
+  | #auto
+  | #linear
+  | #pow
+  | #sqrt
+  | #log
+  | #identity
+  | #time
+
+type domain =
+  | #auto
+  | #dataMin
+  | #dataMax
+  | Tuple(float, float)
+
+// Variant types prevent invalid configurations
+type chartType =
+  | #line
+  | #monotone
+  | #step
+  | #stepBefore
+  | #stepAfter
+----
+
+=== Timeline/Gantt Alternatives
+
+For detailed artifact lifecycle Gantt charts:
+
+==== SVAR React Gantt (via Custom Bindings)
+
+**Status:** Open source (released October 2024) +
+**Website:** https://svar.dev/react/gantt/ +
+**License:** Free and open source +
+**Performance:** Optimized for large datasets
+
+===== Features
+
+* **Dynamic loading** - Handles large task sets
+* **Customizable** - Full control over appearance
+* **Interactive** - Drag, resize, zoom
+* **Modern** - Recently released (Oct 2024)
+
+===== Example Binding Sketch
+
+[source,rescript]
+----
+module SvarGantt = {
+  type task = {
+    id: string,
+    text: string,
+    start: Js.Date.t,
+    end_: Js.Date.t, // 'end' is reserved in ReScript
+    progress: float, // 0.0 to 1.0
+  }
+
+  type ganttData = {
+    tasks: array<task>,
+  }
+
+  @module("@svar/react-gantt") @react.component
+  external make: (
+    ~data: ganttData,
+    ~onTaskClick: task => unit=?,
+  ) => React.element = "Gantt"
+}
+
+// Usage for artifact lifecycles
+type artifactLifecycle = {
+  id: string,
+  name: string,
+  created: Js.Date.t,
+  lastModified: Js.Date.t,
+  completionProgress: float,
+}
+
+@react.component
+let make = (~artifacts: array<artifactLifecycle>) => {
+  let ganttData: SvarGantt.ganttData = {
+    tasks: artifacts->Array.map(artifact => {
+      SvarGantt.task({
+        id: artifact.id,
+        text: artifact.name,
+        start: artifact.created,
+        end_: artifact.lastModified,
+        progress: artifact.completionProgress,
+      })
+    }),
+  }
+
+  <SvarGantt data={ganttData} />
+}
+----
+
+==== Commercial Alternatives
+
+If budget allows and open-source limitations encountered:
+
+* **DHTMLX Gantt** - $699+, handles thousands of tasks
+* **Syncfusion React Gantt** - $749+, extensive timeline views
+* **KendoReact Gantt** - $749+, performant, customizable
+
+*Recommendation:* Start with SVAR React Gantt (free, open source). Only consider commercial if specific features required.
+
+== UI Component Libraries
+
+=== ReScript-React Foundation
+
+**Status:** Official bindings, actively maintained +
+**Documentation:** https://rescript-lang.org/docs/react/latest/introduction +
+**Maturity:** Production-ready
+
+==== Philosophy
+
+ReScript-React compiles closely to idiomatic JavaScript, making integration with existing React ecosystems seamless. This is crucial for visualization work where you'll be mixing:
+
+* ReScript components (type-safe logic)
+* JavaScript visualization libraries (via bindings)
+* Standard React patterns (hooks, context, etc.)
+
+=== Native ReScript UI Libraries
+
+==== Ancestor (Archived)
+
+**Status:** ⚠️ No longer maintained +
+**Repository:** https://github.com/rescriptbr/ancestor
+
+===== What It Was
+
+Suite of layout primitives for responsive web apps:
+
+* Padding, margin, height, width props
+* Responsive design primitives
+* CSS-in-JS approach
+
+===== Why Archived
+
+> "No longer maintained due to recent changes in CSS-in-JS usage and the advent of React Server Components and frameworks like Remix and Next."
+
+===== Lesson
+
+ReScript UI ecosystem is *small*. Philosophy: use JavaScript libraries via bindings rather than rebuilding.
+
+=== Recommended Approach: JavaScript UI Libraries via Bindings
+
+==== Chakra UI (via Custom Bindings)
+
+Mentioned in ReScript forums as recommended option.
+
+* Component-based
+* Accessible by default
+* Themeable
+* Good TypeScript definitions (translatable to ReScript)
+
+==== Tailwind CSS (via rescript-tailwind or similar)
+
+* Utility-first CSS
+* Works well with ReScript's functional approach
+* No heavy bindings needed
+* Style composition via string interpolation or dedicated bindings
+
+==== Material-UI (Existing Bindings)
+
+**Status:** `rescript-material-ui` package exists +
+**Approach:** Bindings auto-generated from MUI documentation
+
+[source,rescript]
+----
+@module("@mui/material") @react.component
+external make: (
+  ~variant: [#text | #outlined | #contained]=?,
+  ~color: [#primary | #secondary | #error]=?,
+  ~onClick: ReactEvent.Mouse.t => unit=?,
+  ~children: React.element=?,
+) => React.element = "Button"
+----
+
+=== Layout Strategy for Anamnesis
+
+Recommended component architecture:
+
+[source,rescript]
+----
+// Core layout primitives
+module Layout = {
+  module Container = {
+    @react.component
+    let make = (~children, ~maxWidth: option<string>=?) => {
+      let style = ReactDOM.Style.make(
+        ~maxWidth=maxWidth->Option.getWithDefault("1200px"),
+        ~margin="0 auto",
+        ~padding="20px",
+        ()
+      )
+      <div style> {children} </div>
+    }
+  }
+
+  module Grid = {
+    type columns = int
+
+    @react.component
+    let make = (~children, ~columns: columns=2) => {
+      let style = ReactDOM.Style.make(
+        ~display="grid",
+        ~gridTemplateColumns=`repeat(${Int.toString(columns)}, 1fr)`,
+        ~gap="20px",
+        ()
+      )
+      <div style> {children} </div>
+    }
+  }
+}
+
+// Visualization container
+module VisualizationPanel = {
+  @react.component
+  let make = (~title: string, ~children) => {
+    <div className="viz-panel">
+      <h2> {React.string(title)} </h2>
+      <div className="viz-content">
+        {children}
+      </div>
+    </div>
+  }
+}
+
+// Usage
+@react.component
+let make = () => {
+  <Layout.Container>
+    <Layout.Grid columns=2>
+      <VisualizationPanel title="Conversation Graph">
+        <ConversationGraphViz />
+      </VisualizationPanel>
+      <VisualizationPanel title="Artifact Timeline">
+        <ArtifactTimelineViz />
+      </VisualizationPanel>
+    </Layout.Grid>
+  </Layout.Container>
+}
+----
+
+== Data Visualization Patterns
+
+=== Functional Reactive Programming (FRP)
+
+==== Core Concepts
+
+From research on reactive data visualizations:
+
+> "Functional reactive programming provides approaches for declaratively specifying data dependency graphs and maintaining them automatically, and is considered an appropriate and effective abstraction for interactive data visualization."
+
+> "Managing complex data flows and update patterns is one of the most difficult challenges in interactive data visualization."
+
+==== FRP in ReScript Context
+
+While pure FRP libraries (like RxJS) aren't common in ReScript ecosystem, React's hooks provide a pragmatic reactive approach:
+
+[source,rescript]
+----
+module ConversationGraphState = {
+  type filter = {
+    speakers: array<[#Claude | #User | #Mistral | #ChatGPT]>,
+    dateRange: option<(Js.Date.t, Js.Date.t)>,
+    searchQuery: option<string>,
+  }
+
+  type state = {
+    nodes: array<conversationNode>,
+    edges: array<conversationEdge>,
+    filter: filter,
+    selectedNode: option<string>,
+  }
+
+  type action =
+    | SetFilter(filter)
+    | SelectNode(option<string>)
+    | LoadConversation(array<conversationNode>, array<conversationEdge>)
+
+  let reducer = (state, action) => {
+    switch action {
+    | SetFilter(filter) => {...state, filter}
+    | SelectNode(nodeId) => {...state, selectedNode: nodeId}
+    | LoadConversation(nodes, edges) => {...state, nodes, edges}
+    }
+  }
+
+  // Derived data (memoized)
+  let filterNodes = (nodes, filter) => {
+    nodes
+    ->Array.filter(node => {
+      filter.speakers->Array.includes(node.speaker)
+    })
+    ->Array.filter(node => {
+      switch filter.searchQuery {
+      | None => true
+      | Some(query) => node.content->String.includes(query)
+      }
+    })
+  }
+}
+
+@react.component
+let make = (~initialNodes, ~initialEdges) => {
+  let (state, dispatch) = React.useReducer(
+    ConversationGraphState.reducer,
+    {
+      nodes: initialNodes,
+      edges: initialEdges,
+      filter: {
+        speakers: [#Claude, #User, #Mistral, #ChatGPT],
+        dateRange: None,
+        searchQuery: None,
+      },
+      selectedNode: None,
+    }
+  )
+
+  // Memoized filtered data
+  let filteredNodes = React.useMemo1(
+    () => ConversationGraphState.filterNodes(state.nodes, state.filter),
+    [state.filter]
+  )
+
+  <div>
+    <FilterControls filter={state.filter} onChange={f => dispatch(SetFilter(f))} />
+    <Reagraph
+      data={{nodes: filteredNodes, edges: state.edges}}
+      onNodeClick={node => dispatch(SelectNode(Some(node.id)))}
+    />
+  </div>
+}
+----
+
+==== Pattern: Declarative Data Flow
+
+[plantuml]
+....
+@startuml
+skinparam componentStyle rectangle
+
+[Raw Data] --> [State Manager\n(useReducer)]
+[State Manager\n(useReducer)] --> [Derived State\n(useMemo)]
+[Derived State\n(useMemo)] --> [Visualization\nComponents]
+[User Interaction] --> [Actions/Dispatch]
+[Actions/Dispatch] --> [State Manager\n(useReducer)]
+
+@enduml
+....
+
+Key principles:
+
+* **Single source of truth** - State held in reducer
+* **Derived data** - Compute filtered/transformed data via `useMemo`
+* **Unidirectional flow** - Actions → State → UI
+* **Type safety** - Variant types for actions prevent invalid states
+
+=== Model-View-Controller (MVC) Pattern
+
+Adapt MVC for visualization:
+
+[source,rescript]
+----
+// Model: Domain data structures
+module ConversationModel = {
+  type t = {
+    id: string,
+    messages: array<message>,
+    artifacts: array<artifact>,
+  }
+
+  // Business logic
+  let getArtifactLifecycle = (conversation, artifactId) => {
+    conversation.artifacts
+    ->Array.filter(a => a.id == artifactId)
+    // ... extract lifecycle events
+  }
+}
+
+// View: Pure visualization components
+module ConversationView = {
+  @react.component
+  let make = (~graphData, ~onNodeClick) => {
+    <Reagraph data={graphData} onNodeClick />
+  }
+}
+
+// Controller: State management and event handling
+module ConversationController = {
+  @react.component
+  let make = (~conversation: ConversationModel.t) => {
+    let (selectedArtifact, setSelectedArtifact) = React.useState(() => None)
+
+    // Transform model data to view data
+    let graphData = React.useMemo1(
+      () => ConversationToGraph.transform(conversation),
+      [conversation]
+    )
+
+    let handleNodeClick = node => {
+      setSelectedArtifact(_ => Some(node.id))
+    }
+
+    <div>
+      <ConversationView graphData onNodeClick={handleNodeClick} />
+      {switch selectedArtifact {
+      | None => React.null
+      | Some(id) => <ArtifactDetailPanel artifactId={id} />
+      }}
+    </div>
+  }
+}
+----
+
+== Type Safety in Visualization
+
+=== Why Type Safety Matters for Visualization
+
+Visualization code is complex:
+
+* **Data transformations** - Raw conversation data → graph structures
+* **State management** - Filters, selections, zoom levels
+* **Event handling** - Click, hover, drag interactions
+* **Configuration** - Chart types, colors, scales
+
+Without type safety, errors emerge at *runtime* when users interact. ReScript catches these at *compile time*.
+
+=== Type Safety Patterns
+
+==== 1. Phantom Types for Units
+
+[source,rescript]
+----
+// Prevent mixing up different ID types
+type rec artifactId = ArtifactId(string)
+and messageId = MessageId(string)
+and conversationId = ConversationId(string)
+
+type node = {
+  id: messageId, // Won't accept artifactId
+  content: string,
+}
+
+type artifact = {
+  id: artifactId, // Won't accept messageId
+  name: string,
+}
+
+// Compiler error: type mismatch
+let node: node = {
+  id: ArtifactId("wrong-type"), // ❌ Error!
+  content: "Hello",
+}
+----
+
+==== 2. Variant Types for Configurations
+
+[source,rescript]
+----
+// Type-safe chart configurations
+type chartConfig = {
+  chartType: [#Line | #Bar | #Area],
+  timeScale: [#Minute | #Hour | #Day | #Week | #Month],
+  aggregation: [#Sum | #Average | #Count | #Max | #Min],
+}
+
+// Exhaustive pattern matching ensures all cases handled
+let formatTimeScale = scale => {
+  switch scale {
+  | #Minute => "minute"
+  | #Hour => "hour"
+  | #Day => "day"
+  | #Week => "week"
+  | #Month => "month"
+  // If we add #Year later, compiler forces us to handle it here
+  }
+}
+----
+
+==== 3. Result Types for Data Loading
+
+[source,rescript]
+----
+module ConversationLoader = {
+  type error =
+    | NetworkError(string)
+    | ParseError(string)
+    | NotFound
+
+  type loadState<'data> =
+    | Loading
+    | Success('data)
+    | Error(error)
+
+  @react.component
+  let make = (~conversationId: conversationId) => {
+    let (state, setState) = React.useState(() => Loading)
+
+    React.useEffect1(() => {
+      // Load conversation
+      fetchConversation(conversationId)
+      ->Promise.then(result => {
+        switch result {
+        | Ok(data) => setState(_ => Success(data))
+        | Error(err) => setState(_ => Error(err))
+        }
+        Promise.resolve()
+      })
+      ->ignore
+
+      None
+    }, [conversationId])
+
+    // Type system forces handling all states
+    switch state {
+    | Loading => <LoadingSpinner />
+    | Success(data) => <ConversationGraph data />
+    | Error(NetworkError(msg)) => <ErrorMessage message={`Network error: ${msg}`} />
+    | Error(ParseError(msg)) => <ErrorMessage message={`Parse error: ${msg}`} />
+    | Error(NotFound) => <ErrorMessage message="Conversation not found" />
+    }
+  }
+}
+----
+
+==== 4. Branded Types for Graph Structures
+
+[source,rescript]
+----
+// Ensure graphs are always valid (no dangling edges)
+module Graph = {
+  type rec validGraph<'nodeId, 'nodeData, 'edgeData> = ValidGraph(
+    array<node<'nodeId, 'nodeData>>,
+    array<edge<'nodeId, 'edgeData>>
+  )
+  and node<'nodeId, 'nodeData> = {
+    id: 'nodeId,
+    data: 'nodeData,
+  }
+  and edge<'nodeId, 'edgeData> = {
+    source: 'nodeId,
+    target: 'nodeId,
+    data: 'edgeData,
+  }
+
+  // Smart constructor validates edges reference existing nodes
+  let make = (nodes: array<node<'nodeId, 'nodeData>>, edges: array<edge<'nodeId, 'edgeData>>) => {
+    let nodeIds = nodes->Array.map(n => n.id)->Set.fromArray
+
+    let allEdgesValid = edges->Array.every(edge => {
+      nodeIds->Set.has(edge.source) && nodeIds->Set.has(edge.target)
+    })
+
+    if allEdgesValid {
+      Ok(ValidGraph(nodes, edges))
+    } else {
+      Error("Invalid graph: edges reference non-existent nodes")
+    }
+  }
+
+  // Only functions that accept validGraph can trust graph structure
+  let toReagraphData = (ValidGraph(nodes, edges)) => {
+    // Safe to convert, graph structure guaranteed valid
+    ...
+  }
+}
+----
+
+=== Benefits Demonstrated
+
+[cols="1,2,2"]
+|===
+|Pattern |Compile-Time Guarantee |Runtime Benefit
+
+|Phantom Types
+|Can't mix up different ID types
+|No "artifact not found" errors from wrong ID type
+
+|Variant Types
+|All cases handled in pattern matching
+|No "undefined is not a function" from unhandled chart types
+
+|Result Types
+|All error states explicitly handled
+|Graceful degradation, clear error messages
+
+|Branded Types
+|Invalid data structures impossible
+|No rendering crashes from malformed graphs
+|===
+
+== Performance Considerations
+
+=== Large Graph Rendering Strategies
+
+For conversation graphs with 1,000+ nodes:
+
+==== 1. WebGL Rendering (Recommended)
+
+**Libraries:** Reagraph, Graph.gl
+
+* **GPU acceleration** - Offloads rendering to graphics hardware
+* **60 FPS interactions** - Smooth zoom/pan even with large graphs
+* **Batch rendering** - All nodes/edges rendered in single pass
+
+Performance comparison from research:
+
+[cols="1,1,1"]
+|===
+|Library |Max Nodes (Interactive) |Rendering Technology
+
+|Reagraph
+|~1,000-5,000
+|WebGL (via three.js)
+
+|Graph.gl
+|10,000+
+|WebGL (via deck.gl)
+
+|ReGraph (commercial)
+|100,000
+|WebGL custom renderer
+
+|Canvas/SVG (D3)
+|~500
+|Canvas or SVG DOM
+|===
+
+==== 2. Level-of-Detail (LOD)
+
+Show different detail levels based on zoom:
+
+[source,rescript]
+----
+module LODGraph = {
+  type zoomLevel =
+    | Overview // Show clusters only
+    | Medium   // Show major nodes
+    | Detail   // Show all nodes
+
+  let getZoomLevel = (scale: float) => {
+    if scale < 0.5 {
+      Overview
+    } else if scale < 2.0 {
+      Medium
+    } else {
+      Detail
+    }
+  }
+
+  @react.component
+  let make = (~allNodes, ~allEdges) => {
+    let (zoomScale, setZoomScale) = React.useState(() => 1.0)
+    let zoomLevel = getZoomLevel(zoomScale)
+
+    // Filter nodes based on zoom level
+    let visibleNodes = React.useMemo2(
+      () => {
+        switch zoomLevel {
+        | Overview => allNodes->Array.filter(n => n.importance > 0.8)
+        | Medium => allNodes->Array.filter(n => n.importance > 0.3)
+        | Detail => allNodes
+        }
+      },
+      (allNodes, zoomLevel)
+    )
+
+    <Reagraph data={{nodes: visibleNodes, edges: allEdges}} />
+  }
+}
+----
+
+==== 3. Clustering
+
+Group related nodes to reduce visual complexity:
+
+* **Temporal clusters** - Group messages from same time period
+* **Speaker clusters** - Group messages by LLM/user
+* **Topic clusters** - Group by project/topic (fuzzy boundaries!)
+
+==== 4. Virtual Scrolling for Lists
+
+For artifact lists/timelines with hundreds of items:
+
+[source,rescript]
+----
+// Conceptual - would use react-window or similar via bindings
+module VirtualizedArtifactList = {
+  @module("react-window") @react.component
+  external fixedSizeList: (
+    ~height: int,
+    ~itemCount: int,
+    ~itemSize: int,
+    ~width: string,
+    ~children: {..} => React.element,
+  ) => React.element = "FixedSizeList"
+
+  @react.component
+  let make = (~artifacts: array<artifact>) => {
+    let renderRow = row => {
+      let artifact = artifacts[row["index"]]
+      <ArtifactRow artifact style={row["style"]} />
+    }
+
+    <fixedSizeList
+      height={600}
+      itemCount={Array.length(artifacts)}
+      itemSize={50}
+      width="100%"
+    >
+      {renderRow}
+    </fixedSizeList>
+  }
+}
+----
+
+=== Memory Management
+
+ReScript's immutability helps but monitor:
+
+==== 1. Memoization
+
+[source,rescript]
+----
+// Expensive graph layout calculations
+let computeLayout = React.useMemo1(
+  () => expensiveForceDirectedLayout(nodes, edges),
+  [nodes, edges] // Only recompute when data changes
+)
+----
+
+==== 2. Lazy Loading
+
+Load conversation data incrementally:
+
+[source,rescript]
+----
+type paginatedData<'a> = {
+  items: array<'a>,
+  hasMore: bool,
+  loadMore: unit => Promise.t<unit>,
+}
+
+let usePaginatedConversations = (initialPage) => {
+  let (data, setData) = React.useState(() => {
+    items: [],
+    hasMore: true,
+    loadMore: () => Promise.resolve()
+  })
+
+  // Implement pagination logic
+  // ...
+
+  data
+}
+----
+
+==== 3. Avoid Unnecessary Re-renders
+
+[source,rescript]
+----
+// Wrap expensive visualizations in React.memo equivalent
+module ConversationGraph = {
+  @react.component
+  let make = React.memo((~data, ~onNodeClick) => {
+    // Expensive rendering
+    <Reagraph data onNodeClick />
+  })
+}
+----
+
+=== Performance Monitoring
+
+[source,rescript]
+----
+module PerformanceMonitor = {
+  let measureRender = (componentName, renderFn) => {
+    let start = Performance.now()
+    let result = renderFn()
+    let end_ = Performance.now()
+
+    Js.Console.log(`${componentName} rendered in ${end_ -. start}ms`)
+    result
+  }
+
+  @react.component
+  let make = (~nodes, ~edges) => {
+    measureRender("ConversationGraph", () => {
+      <Reagraph data={{nodes, edges}} />
+    })
+  }
+}
+----
+
+== Interactivity Patterns
+
+=== Core Interactions for Anamnesis
+
+==== 1. Node Selection
+
+[source,rescript]
+----
+module InteractiveGraph = {
+  type nodeSelection =
+    | NoSelection
+    | SingleNode(messageId)
+    | MultipleNodes(Set.t<messageId>)
+
+  @react.component
+  let make = (~nodes, ~edges) => {
+    let (selection, setSelection) = React.useState(() => NoSelection)
+
+    let handleNodeClick = (node, event) => {
+      // Multi-select with Ctrl/Cmd
+      if event->ReactEvent.Mouse.metaKey || event->ReactEvent.Mouse.ctrlKey {
+        switch selection {
+        | NoSelection => setSelection(_ => SingleNode(node.id))
+        | SingleNode(id) => setSelection(_ => MultipleNodes(Set.fromArray([id, node.id])))
+        | MultipleNodes(ids) => setSelection(_ => MultipleNodes(ids->Set.add(node.id)))
+        }
+      } else {
+        setSelection(_ => SingleNode(node.id))
+      }
+    }
+
+    <Reagraph data={{nodes, edges}} onNodeClick={handleNodeClick} />
+  }
+}
+----
+
+==== 2. Zoom & Pan
+
+Most WebGL libraries (Reagraph, Graph.gl) provide built-in zoom/pan. ReScript bindings:
+
+[source,rescript]
+----
+module ZoomableGraph = {
+  type zoomConfig = {
+    minZoom: float,
+    maxZoom: float,
+    zoomSpeed: float,
+  }
+
+  @react.component
+  let make = (~data, ~zoomConfig=?) => {
+    let config = zoomConfig->Option.getWithDefault({
+      minZoom: 0.1,
+      maxZoom: 10.0,
+      zoomSpeed: 0.5,
+    })
+
+    // Bindings would pass these to underlying library
+    <Reagraph
+      data
+      minZoom={config.minZoom}
+      maxZoom={config.maxZoom}
+      zoomSpeed={config.zoomSpeed}
+    />
+  }
+}
+----
+
+==== 3. Filtering
+
+[source,rescript]
+----
+module FilterableGraph = {
+  type filter = {
+    speakers: Set.t<[#Claude | #User | #Mistral | #ChatGPT]>,
+    dateRange: option<(Js.Date.t, Js.Date.t)>,
+    projects: Set.t<string>,
+    searchText: option<string>,
+  }
+
+  let defaultFilter = {
+    speakers: Set.fromArray([#Claude, #User, #Mistral, #ChatGPT]),
+    dateRange: None,
+    projects: Set.empty(),
+    searchText: None,
+  }
+
+  let applyFilter = (nodes: array<conversationNode>, filter: filter) => {
+    nodes
+    ->Array.filter(node => filter.speakers->Set.has(node.speaker))
+    ->Array.filter(node => {
+      switch filter.dateRange {
+      | None => true
+      | Some((start, end_)) => {
+          node.timestamp >= start && node.timestamp <= end_
+        }
+      }
+    })
+    ->Array.filter(node => {
+      switch filter.searchText {
+      | None => true
+      | Some(text) => node.content->String.toLowerCase->String.includes(
+          text->String.toLowerCase
+        )
+      }
+    })
+  }
+
+  @react.component
+  let make = (~nodes, ~edges) => {
+    let (filter, setFilter) = React.useState(() => defaultFilter)
+
+    let filteredNodes = React.useMemo2(
+      () => applyFilter(nodes, filter),
+      (nodes, filter)
+    )
+
+    <div>
+      <FilterPanel filter onFilterChange={setFilter} />
+      <Reagraph data={{nodes: filteredNodes, edges}} />
+    </div>
+  }
+}
+----
+
+==== 4. Search & Highlight
+
+[source,rescript]
+----
+module SearchableGraph = {
+  type searchResult = {
+    nodeId: messageId,
+    matchScore: float,
+    matchedText: string,
+  }
+
+  let searchNodes = (nodes: array<conversationNode>, query: string) => {
+    nodes
+    ->Array.map(node => {
+      // Simple substring matching (could use fuzzy search)
+      let content = node.content->String.toLowerCase
+      let queryLower = query->String.toLowerCase
+
+      if content->String.includes(queryLower) {
+        Some({
+          nodeId: node.id,
+          matchScore: 1.0,
+          matchedText: node.content,
+        })
+      } else {
+        None
+      }
+    })
+    ->Array.filterMap(x => x)
+  }
+
+  @react.component
+  let make = (~nodes, ~edges) => {
+    let (searchQuery, setSearchQuery) = React.useState(() => "")
+    let (searchResults, setSearchResults) = React.useState(() => [])
+
+    React.useEffect2(() => {
+      if searchQuery != "" {
+        let results = searchNodes(nodes, searchQuery)
+        setSearchResults(_ => results)
+      } else {
+        setSearchResults(_ => [])
+      }
+      None
+    }, (nodes, searchQuery))
+
+    // Highlight matching nodes
+    let highlightedNodeIds = searchResults->Array.map(r => r.nodeId)->Set.fromArray
+
+    let styledNodes = nodes->Array.map(node => {
+      {
+        ...node,
+        highlighted: highlightedNodeIds->Set.has(node.id),
+      }
+    })
+
+    <div>
+      <SearchInput value={searchQuery} onChange={setSearchQuery} />
+      <SearchResults results={searchResults} />
+      <Reagraph data={{nodes: styledNodes, edges}} />
+    </div>
+  }
+}
+----
+
+==== 5. Tooltips & Context Menus
+
+[source,rescript]
+----
+module TooltipGraph = {
+  type tooltipState =
+    | Hidden
+    | Visible({nodeId: messageId, x: float, y: float})
+
+  @react.component
+  let make = (~nodes, ~edges) => {
+    let (tooltip, setTooltip) = React.useState(() => Hidden)
+
+    let handleNodeHover = (node, event) => {
+      setTooltip(_ => Visible({
+        nodeId: node.id,
+        x: event->ReactEvent.Mouse.clientX->Int.toFloat,
+        y: event->ReactEvent.Mouse.clientY->Int.toFloat,
+      }))
+    }
+
+    let handleMouseLeave = () => {
+      setTooltip(_ => Hidden)
+    }
+
+    <div>
+      <Reagraph
+        data={{nodes, edges}}
+        onNodeHover={handleNodeHover}
+        onMouseLeave={handleMouseLeave}
+      />
+      {switch tooltip {
+      | Hidden => React.null
+      | Visible({nodeId, x, y}) => {
+          let node = nodes->Array.find(n => n.id == nodeId)
+          switch node {
+          | None => React.null
+          | Some(node) => {
+              <Tooltip x y>
+                <div>
+                  <strong>{React.string(node.speaker->speakerToString)}</strong>
+                  <p>{React.string(node.content->String.slice(~start=0, ~end=100))}</p>
+                  <small>{React.string(node.timestamp->Js.Date.toISOString)}</small>
+                </div>
+              </Tooltip>
+            }
+          }
+        }
+      }}
+    </div>
+  }
+}
+----
+
+=== Interaction State Management
+
+Centralize interaction state for complex UIs:
+
+[source,rescript]
+----
+module GraphInteractionState = {
+  type state = {
+    selection: nodeSelection,
+    filter: filter,
+    searchQuery: string,
+    tooltip: tooltipState,
+    zoomLevel: float,
+  }
+
+  type action =
+    | SelectNode(messageId)
+    | DeselectAll
+    | SetFilter(filter)
+    | SetSearchQuery(string)
+    | ShowTooltip(messageId, float, float)
+    | HideTooltip
+    | SetZoomLevel(float)
+
+  let reducer = (state, action) => {
+    switch action {
+    | SelectNode(id) => {...state, selection: SingleNode(id)}
+    | DeselectAll => {...state, selection: NoSelection}
+    | SetFilter(filter) => {...state, filter}
+    | SetSearchQuery(query) => {...state, searchQuery: query}
+    | ShowTooltip(id, x, y) => {...state, tooltip: Visible({nodeId: id, x, y})}
+    | HideTooltip => {...state, tooltip: Hidden}
+    | SetZoomLevel(level) => {...state, zoomLevel: level}
+    }
+  }
+}
+----
+
+== Real-World ReScript Visualization Examples
+
+=== Community Projects
+
+From research, ReScript visualization projects are rare in public repositories. Most production ReScript is proprietary.
+
+==== 1. ReScript React Native SVG
+
+**Repository:** https://github.com/rescript-react-native/svg
+
+Bindings for `react-native-svg`, demonstrates:
+
+* Complex external bindings
+* Type-safe SVG path definitions
+* Gradient and pattern support
+
+Not directly applicable to web but shows binding patterns.
+
+==== 2. rescript-recharts Examples
+
+**Repository:** https://github.com/Minnozz/rescript-recharts
+
+Includes working examples:
+
+[source,rescript]
+----
+@react.component
+let make = (~data) => {
+  open Recharts
+  <ResponsiveContainer height={Px(200.)} width={Px(300.)}>
+    <BarChart barCategoryGap={Px(1.)} data>
+      <Bar name="Some bar" dataKey="pv" fill="#2078b4" stackId="a" />
+      <Tooltip />
+      <Legend align=#left iconType=#circle />
+    </BarChart>
+  </ResponsiveContainer>
+}
+----
+
+Good reference for:
+
+* Binding to component libraries
+* Type-safe prop definitions
+* Variant type usage for enums
+
+==== 3. Hyperswitch (Production ReScript)
+
+**Blog Post:** https://hyperswitch.io/blog/why-we-chose-rescript-over-typescript
+
+Large-scale production ReScript application. While not primarily visualization, demonstrates:
+
+* Complex state management
+* Integration with JavaScript ecosystem
+* Performance at scale
+* Why companies choose ReScript over TypeScript
+
+=== Learning Resources
+
+Since examples are limited, learn from:
+
+==== Official Documentation
+
+* **ReScript Manual** - https://rescript-lang.org/docs/manual/latest/introduction
+* **ReScript-React Docs** - https://rescript-lang.org/docs/react/latest/introduction
+* **Bindings Cookbook** - https://github.com/rescriptbr/rescript-bindings-cookbook
+
+==== Migration Stories
+
+* **"Rewriting a Project in ReScript"** - https://yangdanny97.github.io/blog/2021/07/09/Migrating-to-Rescript
+* **"From TypeScript to ReScript"** - https://www.greyblake.com/blog/from-typescript-to-rescript/
+
+==== Community
+
+* **ReScript Forum** - https://forum.rescript-lang.org/
+* **ReScript Discord** - Active community for questions
+* **awesome-rescript** - https://github.com/fhammerschmidt/awesome-rescript
+
+=== Recommended Learning Path for Anamnesis
+
+. **Master ReScript basics** - Type system, pattern matching, modules
+. **Learn rescript-react** - Hooks, components, state management
+. **Study rescript-recharts source** - Understand binding patterns
+. **Write Reagraph bindings** - Start with minimal API surface
+. **Incrementally expand** - Add bindings as needed, not upfront
+
+== Architectural Recommendations
+
+=== Recommended Architecture for Anamnesis Visualization
+
+[source]
+----
+visualization/                    # ReScript visualization layer
+├── src/
+│   ├── bindings/                # JavaScript library bindings
+│   │   ├── Reagraph.res         # Graph visualization bindings
+│   │   ├── Recharts.res         # Chart bindings (use @minnozz/rescript-recharts)
+│   │   └── SvarGantt.res        # Gantt chart bindings
+│   │
+│   ├── components/              # Visualization components
+│   │   ├── ConversationGraph.res
+│   │   ├── ArtifactTimeline.res
+│   │   ├── ProjectCategoryViz.res
+│   │   └── EpisodicMemoryViz.res
+│   │
+│   ├── state/                   # State management
+│   │   ├── ConversationState.res
+│   │   ├── FilterState.res
+│   │   └── InteractionState.res
+│   │
+│   ├── transforms/              # Data transformations
+│   │   ├── ConversationToGraph.res
+│   │   ├── ArtifactToTimeline.res
+│   │   └── ProjectClustering.res
+│   │
+│   ├── types/                   # Domain types
+│   │   ├── Conversation.res
+│   │   ├── Artifact.res
+│   │   └── Graph.res
+│   │
+│   └── App.res                  # Main app component
+│
+├── bsconfig.json                # ReScript configuration
+├── package.json                 # Dependencies
+└── README.md
+----
+
+=== Data Flow
+
+[source]
+----
+Virtuoso RDF Store (SPARQL queries)
+    ↓
+Julia RDF Manipulation
+    ↓
+Elixir Orchestration Layer
+    ↓
+JSON API
+    ↓
+ReScript Visualization Layer
+    ↓ (load)
+Raw Data (Conversation, Artifact records)
+    ↓ (transform)
+Graph Structures (typed nodes/edges)
+    ↓ (visualize)
+React Components (Reagraph, Recharts)
+    ↓ (interact)
+User Actions (filter, zoom, select)
+    ↓ (dispatch)
+State Updates
+    ↓ (re-render)
+Updated Visualizations
+----
+
+=== Integration Points
+
+==== 1. Elixir ↔ ReScript
+
+Elixir serves JSON API:
+
+[source,elixir]
+----
+# Elixir side
+defmodule AnamnesisWeb.ConversationController do
+  def show(conn, %{"id" => id}) do
+    conversation = Conversations.get_conversation!(id)
+
+    json(conn, %{
+      id: conversation.id,
+      messages: Enum.map(conversation.messages, &message_to_json/1),
+      artifacts: Enum.map(conversation.artifacts, &artifact_to_json/1),
+    })
+  end
+end
+----
+
+ReScript consumes:
+
+[source,rescript]
+----
+// ReScript side
+module API = {
+  type conversation = {
+    id: string,
+    messages: array<message>,
+    artifacts: array<artifact>,
+  }
+
+  let fetchConversation = (id: string): Promise.t<result<conversation, string>> => {
+    Fetch.fetch(`/api/conversations/${id}`)
+    ->Promise.then(Fetch.Response.json)
+    ->Promise.then(json => {
+      // Decode JSON to typed conversation
+      switch ConversationDecoder.decode(json) {
+      | Ok(conversation) => Promise.resolve(Ok(conversation))
+      | Error(msg) => Promise.resolve(Error(msg))
+      }
+    })
+    ->Promise.catch(err => {
+      Promise.resolve(Error("Network error"))
+    })
+  }
+}
+----
+
+==== 2. Type Synchronization
+
+Keep ReScript types in sync with Elixir schemas:
+
+**Option A: Manual Maintenance**
+
+* Define types in both languages
+* Use integration tests to verify compatibility
+
+**Option B: Generate from JSON Schema**
+
+* Elixir generates JSON Schema
+* Tool generates ReScript types (doesn't exist yet, would need to build)
+
+**Option C: Runtime Validation**
+
+* Use ReScript decoders (like `@glennsl/rescript-json-combinators`)
+* Validate at runtime, fail gracefully
+
+Recommended: **Option C** (most practical for now)
+
+=== Module Separation
+
+==== Bindings (External World)
+
+[source,rescript]
+----
+// Reagraph.res - External bindings only
+module Reagraph = {
+  type node<'id> = {id: 'id, label: option<string>}
+  type edge<'id> = {source: 'id, target: 'id}
+  type graphData<'id> = {nodes: array<node<'id>>, edges: array<edge<'id>>}
+
+  @module("reagraph") @react.component
+  external make: (~data: graphData<'id>) => React.element = "GraphCanvas"
+}
+----
+
+==== Domain Types (Business Logic)
+
+[source,rescript]
+----
+// Conversation.res - Domain types
+type messageId = string
+type speaker = [#Claude | #User | #Mistral | #ChatGPT]
+
+type message = {
+  id: messageId,
+  content: string,
+  speaker: speaker,
+  timestamp: Js.Date.t,
+}
+
+type conversation = {
+  id: string,
+  messages: array<message>,
+}
+----
+
+==== Transformations (Bridge)
+
+[source,rescript]
+----
+// ConversationToGraph.res - Transform domain to visualization
+let toGraphData = (conversation: conversation): Reagraph.graphData<messageId> => {
+  {
+    nodes: conversation.messages->Array.map(msg => {
+      Reagraph.node({
+        id: msg.id,
+        label: Some(msg.content->String.slice(~start=0, ~end=50)),
+      })
+    }),
+    edges: [], // Derive from message relationships
+  }
+}
+----
+
+==== Components (UI)
+
+[source,rescript]
+----
+// ConversationGraph.res - UI component
+@react.component
+let make = (~conversation: conversation) => {
+  let graphData = React.useMemo1(
+    () => ConversationToGraph.toGraphData(conversation),
+    [conversation]
+  )
+
+  <Reagraph data={graphData} />
+}
+----
+
+=== Testing Strategy
+
+==== 1. Type Tests
+
+ReScript's type system IS your unit tests for many cases:
+
+[source,rescript]
+----
+// This won't compile if types are wrong
+let graph: Graph.validGraph<messageId, message, unit> =
+  Graph.make(nodes, edges)->Result.getExn
+----
+
+==== 2. Snapshot Tests
+
+For React components:
+
+[source,rescript]
+----
+// Use rescript-testing-library or similar
+open ReactTestingLibrary
+
+test("renders conversation graph", () => {
+  let {container} = render(<ConversationGraph conversation={mockConversation} />)
+  expect(container)->toMatchSnapshot()
+})
+----
+
+==== 3. Property Tests
+
+For transformations:
+
+[source,rescript]
+----
+// All nodes in graph should come from conversation
+let testGraphNodesMatchConversation = (conversation) => {
+  let graph = ConversationToGraph.toGraphData(conversation)
+  let messageIds = conversation.messages->Array.map(m => m.id)->Set.fromArray
+  let nodeIds = graph.nodes->Array.map(n => n.id)->Set.fromArray
+
+  assert(Set.equal(messageIds, nodeIds))
+}
+----
+
+==== 4. Integration Tests
+
+Test full data flow:
+
+[source,rescript]
+----
+testAsync("loads and renders conversation", async () => {
+  let conversation = await API.fetchConversation("test-id")->Promise.map(Result.getExn)
+  let {getByText} = render(<ConversationGraph conversation />)
+
+  expect(getByText("Expected message"))->toBeInTheDocument()
+})
+----
+
+== Library Comparison Matrix
+
+[cols="1,1,1,1,1,1"]
+|===
+|Library |Type |Performance |Complexity |Ecosystem |Recommendation
+
+|**Reagraph**
+|Graph viz
+|High (WebGL)
+|Medium
+|React
+|✅ **Primary choice** for graphs
+
+|**Graph.gl**
+|Graph viz
+|Very High (deck.gl)
+|High
+|deck.gl/React
+|🔧 If >5k nodes needed
+
+|**rescript-recharts**
+|Charts
+|Medium (SVG)
+|Low
+|React/ReScript
+|✅ **Primary choice** for charts
+
+|**rescript-d3**
+|Low-level viz
+|Varies
+|Very High
+|D3
+|❌ Avoid (stale, too complex)
+
+|**SVAR Gantt**
+|Timeline/Gantt
+|High
+|Medium
+|React
+|✅ **Primary choice** for Gantt
+
+|**Material-UI**
+|UI components
+|Medium
+|Low
+|React/Material
+|🔧 If Material Design desired
+
+|**Chakra UI**
+|UI components
+|Medium
+|Low
+|React
+|🔧 If custom bindings acceptable
+
+|**Tailwind**
+|CSS utility
+|N/A
+|Low
+|Any
+|✅ Good for custom layouts
+|===
+
+Legend:
+
+* ✅ Recommended
+* 🔧 Conditional use
+* ❌ Avoid
+
+== Fuzzy Boundaries Visualization
+
+Special consideration for Anamnesis's "fuzzy boundaries" requirement:
+
+=== Concept
+
+Conversations span multiple projects. A single conversation might be 60% Project A, 30% Project B, 10% Project C. Visualize this overlap.
+
+=== Approach 1: Overlapping Clusters
+
+[source,rescript]
+----
+module FuzzyProjectClusters = {
+  type projectMembership = {
+    projectId: string,
+    strength: float, // 0.0 to 1.0
+  }
+
+  type nodeWithProjects = {
+    id: messageId,
+    content: string,
+    projects: array<projectMembership>, // Can belong to multiple
+  }
+
+  // Color mixing based on project membership
+  let mixColors = (memberships: array<projectMembership>) => {
+    // Weight colors by membership strength
+    // Return blended color
+    ...
+  }
+
+  @react.component
+  let make = (~nodes: array<nodeWithProjects>) => {
+    let styledNodes = nodes->Array.map(node => {
+      Reagraph.node({
+        id: node.id,
+        label: Some(node.content),
+        fill: Some(mixColors(node.projects)),
+      })
+    })
+
+    <Reagraph data={{nodes: styledNodes, edges: []}} />
+  }
+}
+----
+
+=== Approach 2: Venn Diagram Overlay
+
+Use multiple overlapping force-directed layouts:
+
+[source,rescript]
+----
+module VennProjectViz = {
+  // Each project has a center point
+  // Nodes pulled toward centers based on membership strength
+
+  type projectCenter = {
+    projectId: string,
+    x: float,
+    y: float,
+  }
+
+  let computeNodePosition = (
+    node: nodeWithProjects,
+    centers: array<projectCenter>
+  ) => {
+    // Weighted average of project centers
+    let totalStrength = node.projects
+      ->Array.reduce(0.0, (sum, m) => sum +. m.strength)
+
+    let (x, y) = node.projects->Array.reduce((0.0, 0.0), ((sumX, sumY), membership) => {
+      let center = centers->Array.find(c => c.projectId == membership.projectId)
+      switch center {
+      | None => (sumX, sumY)
+      | Some(center) => {
+          let weight = membership.strength /. totalStrength
+          (sumX +. center.x *. weight, sumY +. center.y *. weight)
+        }
+      }
+    })
+
+    (x, y)
+  }
+}
+----
+
+=== Approach 3: Sankey Diagram
+
+Show conversation flow between projects:
+
+[source,rescript]
+----
+// Would use Recharts Sankey or custom bindings
+module ProjectFlowSankey = {
+  type flow = {
+    from: string, // project ID
+    to: string,   // project ID
+    value: float, // conversation time or message count
+  }
+
+  // Compute flows from conversation sequences
+  let computeFlows = (conversation: conversation) => {
+    // Analyze project transitions
+    ...
+  }
+}
+----
+
+*Recommendation:* Start with **Approach 1** (overlapping clusters with color mixing). Simplest to implement, visually intuitive.
+
+== Next Steps for Implementation
+
+=== Phase 1: Foundation (Week 1-2)
+
+. ✅ Setup ReScript project structure
+. ✅ Install dependencies (`rescript`, `@rescript/react`, `@minnozz/rescript-recharts`)
+. ✅ Define core domain types (Conversation, Message, Artifact)
+. ✅ Create basic React component scaffolding
+. ✅ Setup build pipeline (integrate with existing Elixir project)
+
+=== Phase 2: Bindings (Week 2-3)
+
+. ✅ Study rescript-recharts for binding patterns
+. ✅ Write minimal Reagraph bindings (just GraphCanvas component)
+. ✅ Test bindings with mock data
+. ✅ Expand bindings incrementally as needed
+
+=== Phase 3: Core Visualizations (Week 3-5)
+
+. ✅ Implement ConversationGraph component
+. ✅ Implement ArtifactTimeline component
+. ✅ Implement basic filtering
+. ✅ Add interactivity (click, hover)
+
+=== Phase 4: Advanced Features (Week 5-7)
+
+. ✅ Fuzzy project boundaries visualization
+. ✅ Search functionality
+. ✅ Performance optimization (LOD, memoization)
+. ✅ Gantt chart for artifact lifecycles (if needed)
+
+=== Phase 5: Integration (Week 7-8)
+
+. ✅ Connect to Elixir API
+. ✅ Handle real data from Virtuoso
+. ✅ Error handling and loading states
+. ✅ End-to-end testing
+
+=== Phase 6: Polish (Week 8-9)
+
+. ✅ Responsive design
+. ✅ Accessibility (ARIA labels, keyboard navigation)
+. ✅ Documentation
+. ✅ Performance profiling and optimization
+
+== Conclusion
+
+The ReScript visualization ecosystem is **viable but requires custom binding work**. The language's strengths—type safety, functional paradigm, excellent JavaScript interop—align perfectly with Anamnesis's requirements.
+
+=== Key Takeaways
+
+. **Use rescript-recharts** for standard charts and timelines (mature, well-maintained)
+. **Write custom Reagraph bindings** for graph visualization (WebGL performance crucial)
+. **Leverage ReScript's type system** to prevent runtime visualization errors
+. **Embrace functional patterns** for state management and data transformations
+. **Start minimal** - bind only what you need, expand incrementally
+. **Test at type boundaries** - JSON decoders, external bindings
+
+=== Success Criteria
+
+By following this research and recommendations, Anamnesis visualization layer will achieve:
+
+* ✅ **Type safety** - Compile-time guarantees prevent runtime crashes
+* ✅ **Performance** - WebGL rendering handles large conversation graphs
+* ✅ **Maintainability** - Clear separation of bindings, domain logic, UI
+* ✅ **Academic rigor** - Well-documented, principled architecture
+* ✅ **Functional paradigm** - Immutable data, pure transformations, composable components
+
+The path forward is clear: **ReScript + Reagraph + rescript-recharts** forms a solid foundation for Anamnesis's visualization needs.
+
+== References
+
+=== Official Documentation
+
+* ReScript Language Manual: https://rescript-lang.org/docs/manual/latest/introduction
+* ReScript React: https://rescript-lang.org/docs/react/latest/introduction
+* ReScript Bindings Cookbook: https://github.com/rescriptbr/rescript-bindings-cookbook
+
+=== Libraries
+
+* rescript-recharts: https://github.com/Minnozz/rescript-recharts
+* Reagraph: https://github.com/reaviz/reagraph
+* Graph.gl: https://graph.gl/
+* SVAR React Gantt: https://svar.dev/react/gantt/
+
+=== Research Articles
+
+* "Reactive Data Visualizations" (Kelleher, Levkowitz)
+* "Functional Reactive Programming" - Wikipedia
+* "Ten React graph visualization libraries to consider in 2024" - DEV Community
+
+=== Blog Posts
+
+* "Why ReScript Was a Better Fit Than TypeScript for Hyperswitch": https://hyperswitch.io/blog/why-we-chose-rescript-over-typescript
+* "Rewriting a Project in ReScript": https://yangdanny97.github.io/blog/2021/07/09/Migrating-to-Rescript
+* "From TypeScript to ReScript": https://www.greyblake.com/blog/from-typescript-to-rescript/
+
+=== Community
+
+* ReScript Forum: https://forum.rescript-lang.org/
+* awesome-rescript: https://github.com/fhammerschmidt/awesome-rescript
+
+---
+
+_Document prepared for Anamnesis project - 2025-11-22_

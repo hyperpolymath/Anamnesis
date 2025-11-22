@@ -1,0 +1,1356 @@
+= Anamnesis System Architecture
+:doctype: book
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+:version: 0.1.0
+:date: 2025-11-22
+
+== Executive Summary
+
+Anamnesis is a conversation knowledge extraction and reconciliation system designed to parse tangled multi-LLM discussion threads, track artifact lifecycles, cross-link related fragments, and generate clean summaries with proper project/topic categorization.
+
+=== Problem Statement
+
+Modern AI-assisted development workflows suffer from:
+
+* **Mixed-project conversations** - Multiple projects discussed in single threads
+* **Dead-end tangents** - Valuable explorations lost in conversation noise
+* **Lost context** - Decisions and rationale buried in chat history
+* **Artifact fragmentation** - Code/docs created, modified, lost across sessions
+* **Multi-LLM chaos** - Switching between Claude, ChatGPT, Mistral with no unified view
+
+=== Solution Approach
+
+Anamnesis employs a multi-language, functionally-oriented architecture:
+
+* **OCaml parsing** - Type-safe conversation format parsing with combinators
+* **Elixir orchestration** - Fault-tolerant process supervision and coordination
+* **λProlog reasoning** - Higher-order meta-reasoning about conversation structure
+* **Julia analytics** - RDF manipulation, reservoir computing, KBANN
+* **Virtuoso storage** - RDF triplestore with SPARQL querying
+* **ReScript visualization** - Type-safe, functional UI components
+
+== Architectural Principles
+
+=== Design Philosophy
+
+[%header,cols="1,3"]
+|===
+| Principle | Implementation
+
+| **Multi-category membership**
+| Conversations can belong to multiple projects simultaneously (fuzzy boundaries)
+
+| **Episodic memory**
+| Conversations stored as temporal episodes with context preservation
+
+| **Artifact lifecycle tracking**
+| Track created→modified→removed→evaluated state transitions
+
+| **Cross-conversation linking**
+| Fragment references maintained across conversation boundaries
+
+| **Type safety**
+| Strong typing in OCaml, ReScript, Elixir typespecs, Julia
+
+| **Functional paradigm**
+| Immutability, pure functions, declarative transformations
+
+| **Fault tolerance**
+| Supervision trees, process isolation, graceful degradation
+
+| **Academic rigor**
+| Research-grade documentation, formal semantics where applicable
+|===
+
+=== Technology Selection Rationale
+
+==== OCaml for Parsing
+
+* **Parser combinators** - Angstrom library for incremental, performant parsing
+* **Type safety** - Catch format errors at compile time
+* **Atdgen** - Generate parsers from schemas (JSON → OCaml types)
+* **Alberto library** - Clean Erlang port integration
+* **ELPI integration** - Native OCaml embedding of λProlog
+
+==== Elixir for Orchestration
+
+* **Fault tolerance** - OTP supervision trees, let-it-crash philosophy
+* **Concurrency** - Parallel parsing via port pools
+* **Process isolation** - Parser crashes don't kill system
+* **BEAM VM** - Proven reliability for long-running services
+* **GenServer patterns** - Clean state management
+
+==== λProlog (ELPI) for Meta-Reasoning
+
+* **Higher-Order Abstract Syntax (HOAS)** - Natural representation of binding structures
+* **Meta-reasoning** - Reason about conversation structure itself
+* **Hypothetical reasoning** - "What if we categorize this differently?"
+* **Typed logic programming** - Static polymorphic types
+* **OCaml embeddable** - Clean integration with parser layer
+
+==== Julia for Analytics
+
+* **RDF manipulation** - Serd.jl for efficient RDF serialization
+* **SPARQL queries** - HTTP.jl for Virtuoso communication
+* **Reservoir computing** - ReservoirComputing.jl (production-ready)
+* **KBANN** - Custom implementation on Flux.jl
+* **NO PYTHON** - Critical user constraint satisfied
+* **Performance** - JIT compilation, GPU support (CUDA.jl)
+
+==== Virtuoso for Storage
+
+* **RDF native** - First-class RDF/RDFS/OWL support
+* **SPARQL 1.1** - Full standard compliance
+* **Named graphs** - Perfect for episodic memory (RDF quads)
+* **Inference** - RDFS/OWL reasoning built-in
+* **Scalability** - Handles millions of triples
+* **Federation** - Query across knowledge graphs
+
+==== ReScript for Visualization
+
+* **Type safety** - Compile-time guarantees, no runtime errors
+* **Functional** - Aligns with project philosophy
+* **JavaScript interop** - Excellent bindings to React ecosystem
+* **Reagraph** - WebGL graph visualization (1000-5000 nodes)
+* **rescript-recharts** - Timeline/lifecycle charts
+* **Kill JavaScript** - User goal: ReScript → native (future)
+
+== System Architecture
+
+=== High-Level Component Diagram
+
+[source,text]
+----
+┌─────────────────────────────────────────────────────────────────┐
+│                     Data Sources (Inputs)                       │
+│  Claude JSON | ChatGPT Export | Mistral Logs | Git History    │
+│  Firefox/Chrome | Local LLMs | [Future: WhatsApp, LinkedIn]   │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  Parser Layer (OCaml + Ports)                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌─────────────────┐      │
+│  │ Angstrom     │  │ Atdgen       │  │ Format Registry │      │
+│  │ Combinators  │  │ Type Gen     │  │ Auto-detect     │      │
+│  └──────────────┘  └──────────────┘  └─────────────────┘      │
+│                                                                 │
+│  Output: Generic Conversation AST                              │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              Orchestration Layer (Elixir/OTP)                   │
+│  ┌──────────────────────┐     ┌─────────────────────┐          │
+│  │ Supervisor Tree      │     │ Port Pool Manager   │          │
+│  │ ├─ Parser Pool       │     │ (4-8 OCaml workers) │          │
+│  │ ├─ λProlog Reasoner  │     └─────────────────────┘          │
+│  │ ├─ Julia Bridge      │                                      │
+│  │ └─ Web API           │     ┌─────────────────────┐          │
+│  └──────────────────────┘     │ GenServer State     │          │
+│                                │ (caching, batching) │          │
+│                                └─────────────────────┘          │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                ┌────────────┴────────────┐
+                │                         │
+                ▼                         ▼
+┌───────────────────────────┐  ┌──────────────────────────────────┐
+│  Reasoning Layer          │  │  Analytics Layer (Julia)         │
+│  (λProlog/ELPI)          │  │  ┌────────────────────────────┐  │
+│  ┌─────────────────────┐ │  │  │ RDF Manipulation (Serd.jl) │  │
+│  │ Artifact Lifecycle  │ │  │  └────────────────────────────┘  │
+│  │ Multi-category      │ │  │  ┌────────────────────────────┐  │
+│  │ Cross-conversation  │ │  │  │ SPARQL (HTTP.jl)           │  │
+│  │ Episodic memory     │ │  │  └────────────────────────────┘  │
+│  │ Contamination detect│ │  │  ┌────────────────────────────┐  │
+│  └─────────────────────┘ │  │  │ Reservoir Computing        │  │
+│                           │  │  │ (ReservoirComputing.jl)    │  │
+│  Output: RDF triples +    │  │  └────────────────────────────┘  │
+│          inferences       │  │  ┌────────────────────────────┐  │
+└───────────┬───────────────┘  │  │ KBANN (Flux.jl)            │  │
+            │                  │  └────────────────────────────┘  │
+            │                  │  ┌────────────────────────────┐  │
+            │                  │  │ Graph Processing           │  │
+            │                  │  │ (Graphs.jl, MetaGraphs.jl) │  │
+            │                  │  └────────────────────────────┘  │
+            │                  └──────────┬───────────────────────┘
+            │                             │
+            ▼                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              Knowledge Graph (Virtuoso + SPARQL)                │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Named Graphs (Episodic Memory)                           │  │
+│  │ ├─ graph:conversation:uuid-1 (conversation metadata)     │  │
+│  │ ├─ graph:artifacts:uuid-1 (artifact lifecycles)          │  │
+│  │ └─ graph:links:uuid-1 (cross-conversation references)    │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ RDF Schema (Ontology)                                    │  │
+│  │ :Conversation, :Message, :Artifact, :Project, :Speaker   │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ SPARQL 1.1 Endpoint (queries from all layers)           │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│           Visualization Layer (ReScript + React)                │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐ │
+│  │ Conversation     │  │ Artifact         │  │ Project      │ │
+│  │ Graph (Reagraph) │  │ Timeline (Gantt) │  │ Category Viz │ │
+│  │ WebGL, 2D/3D     │  │ rescript-recharts│  │ Fuzzy bounds │ │
+│  └──────────────────┘  └──────────────────┘  └──────────────┘ │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Interactive Features: Search, Filter, Zoom, Pan          │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+----
+
+=== Data Flow
+
+==== Ingestion Pipeline (Write Path)
+
+[source,text]
+----
+1. Conversation File(s)
+   ↓
+2. [Elixir] Read file, detect format
+   ↓
+3. [Elixir → OCaml Port] Send raw content
+   ↓
+4. [OCaml] Parse with Angstrom/Atdgen → Generic AST
+   ↓
+5. [OCaml → Elixir Port] Return AST (ETF format via Alberto)
+   ↓
+6. [Elixir → λProlog Port] Send AST for reasoning
+   ↓
+7. [λProlog/ELPI] Extract:
+   - Artifact lifecycles
+   - Cross-references
+   - Category memberships
+   - Contamination patterns
+   ↓
+8. [λProlog → Elixir] Return inferences
+   ↓
+9. [Elixir → Julia Port] Send AST + inferences
+   ↓
+10. [Julia] Generate RDF triples:
+    - Conversations → :Conversation instances
+    - Messages → :Message instances
+    - Artifacts → :Artifact with lifecycle
+    - Projects → :Project with fuzzy membership
+    - Links → :references properties
+    ↓
+11. [Julia] Serialize to N-Triples (Serd.jl)
+    ↓
+12. [Julia → Virtuoso] HTTP POST to SPARQL endpoint
+    ↓
+13. [Virtuoso] Store in appropriate named graphs
+    ↓
+14. [Virtuoso] Run inference (RDFS/OWL)
+    ↓
+15. Success/failure → back through chain to Elixir
+----
+
+==== Query Pipeline (Read Path)
+
+[source,text]
+----
+1. User Query (ReScript UI)
+   ↓
+2. [ReScript → Elixir] HTTP POST with query parameters
+   ↓
+3. [Elixir] Parse query, determine data needs
+   ↓
+   ├─ Simple query?
+   │  ↓
+   │  [Elixir → Virtuoso] Direct SPARQL query
+   │  ↓
+   │  Return results → ReScript
+   │
+   └─ Complex reasoning?
+      ↓
+      [Elixir → λProlog] Send query with context
+      ↓
+      [λProlog] Reason over knowledge graph structure
+      ↓
+      [λProlog → Virtuoso] Generate SPARQL queries
+      ↓
+      [Virtuoso] Execute queries, return bindings
+      ↓
+      [λProlog] Synthesize results
+      ↓
+      [λProlog → Elixir] Return reasoned results
+      ↓
+      [Elixir → ReScript] JSON response
+      ↓
+      [ReScript] Render visualization
+----
+
+==== Reservoir Computing Pipeline (Learning Path)
+
+[source,text]
+----
+1. [Elixir] Trigger periodic analysis
+   ↓
+2. [Elixir → Virtuoso] Fetch conversation subgraph
+   ↓
+3. [Virtuoso → Julia] SPARQL results (RDF graph)
+   ↓
+4. [Julia] Convert to MetaGraph (Graphs.jl)
+   ↓
+5. [Julia] Generate embeddings (GraphNeuralNetworks.jl)
+   ↓
+6. [Julia] λProlog rules → KBANN structure (Flux.jl)
+   ↓
+7. [Julia] Merge KBANN + Reservoir (knowledge-augmented ESN)
+   ↓
+8. [Julia] Train on conversation sequences
+   ↓
+9. [Julia] Predict:
+   - Likely next topics
+   - Project categorization
+   - Artifact lifecycle transitions
+   - Contamination risk
+   ↓
+10. [Julia] Convert predictions → RDF triples
+    ↓
+11. [Julia → Virtuoso] Store predictions in graph:predictions:uuid
+    ↓
+12. [ReScript UI] Visualize predictions alongside actual data
+----
+
+== Detailed Component Specifications
+
+=== Parser Layer (OCaml)
+
+==== Module Structure
+
+[source,ocaml]
+----
+anamnesis_parser/
+├── lib/
+│   ├── conversation_types.atd      (* ATD schemas *)
+│   ├── conversation_types.ml       (* Generated by atdgen *)
+│   ├── conversation_types.mli
+│   ├── generic_conversation.ml     (* Normalized format *)
+│   ├── format_registry.ml          (* Auto-detection *)
+│   ├── parsers/
+│   │   ├── claude_parser.ml
+│   │   ├── chatgpt_parser.ml
+│   │   ├── mistral_parser.ml
+│   │   └── git_log_parser.ml
+│   └── port_interface.ml           (* Alberto-based port *)
+└── bin/
+    └── parser_port.ml              (* Port executable *)
+----
+
+==== Key Dependencies
+
+* `angstrom` (0.15.0) - Parser combinators
+* `atdgen` (2.16.0) - Type generation from ATD
+* `yojson` (3.0.0) - JSON low-level parsing
+* `alberto` - Erlang term format for ports
+* `cmdliner` - CLI argument parsing
+
+==== Format Registry Pattern
+
+Each parser implements:
+
+[source,ocaml]
+----
+module type ConversationFormat = sig
+  type format_specific_ast
+
+  val detect : string -> bool
+  val parse : string -> (Generic.conversation, string) result
+  val validate : Generic.conversation -> bool
+  val metadata : format_metadata
+end
+----
+
+Auto-detection tries each registered format's `detect` function.
+
+=== Orchestration Layer (Elixir)
+
+==== Supervision Tree
+
+[source,elixir]
+----
+Anamnesis.Application
+├── Anamnesis.PortSupervisor
+│   ├── Anamnesis.ParserPool (DynamicSupervisor)
+│   │   ├── ParserPort.Worker (×4)
+│   │   ├── ParserPort.Worker
+│   │   ├── ParserPort.Worker
+│   │   └── ParserPort.Worker
+│   ├── Anamnesis.LambdaPrologPort
+│   └── Anamnesis.JuliaPort
+├── Anamnesis.IngestionPipeline (GenServer)
+├── Anamnesis.QueryEngine (GenServer)
+├── Anamnesis.CacheManager (ETS-backed)
+└── AnamnesisWeb.Endpoint (Phoenix)
+----
+
+==== Port Communication Protocol
+
+Messages use Erlang External Term Format (via Alberto in OCaml):
+
+[source,elixir]
+----
+# Request to parser
+%{
+  action: :parse,
+  format: :auto,  # or :claude, :chatgpt, etc.
+  content: "...",
+  options: %{validate: true}
+}
+
+# Response from parser
+%{
+  status: :ok,
+  conversation: %{
+    id: "uuid",
+    messages: [...],
+    artifacts: [...],
+    metadata: %{...}
+  }
+}
+----
+
+==== GenServer Pattern: IngestionPipeline
+
+[source,elixir]
+----
+defmodule Anamnesis.IngestionPipeline do
+  use GenServer
+
+  def handle_call({:ingest, file_path}, _from, state) do
+    with {:ok, content} <- File.read(file_path),
+         {:ok, ast} <- parse_via_port(content),
+         {:ok, inferences} <- reason_via_lambda_prolog(ast),
+         {:ok, rdf} <- generate_rdf_via_julia(ast, inferences),
+         {:ok, _} <- store_in_virtuoso(rdf) do
+      {:reply, :ok, state}
+    else
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
+  end
+end
+----
+
+=== Reasoning Layer (λProlog/ELPI)
+
+==== Module Organization
+
+[source,prolog]
+----
+anamnesis_reasoning/
+├── core/
+│   ├── types.elpi              (* Type definitions *)
+│   ├── ontology.elpi           (* RDF schema awareness *)
+│   └── utils.elpi              (* Helper predicates *)
+├── lifecycle/
+│   ├── artifact_states.elpi    (* State machine *)
+│   └── transitions.elpi        (* Valid transitions *)
+├── categorization/
+│   ├── fuzzy_membership.elpi   (* Multi-category logic *)
+│   └── contamination.elpi      (* Detect cross-contamination *)
+├── linking/
+│   ├── cross_conversation.elpi (* Fragment references *)
+│   └── reference_resolution.elpi
+└── episodic/
+    ├── memory_queries.elpi     (* Episode recall *)
+    └── temporal_reasoning.elpi (* Time-based queries *)
+----
+
+==== Integration with OCaml
+
+ELPI is embedded as OCaml library:
+
+[source,ocaml]
+----
+let elpi_instance = Elpi.init ~silent:false () in
+Elpi.Setup.init ~builtins:[...] elpi_instance;
+Elpi.Setup.load_file elpi_instance "artifact_states.elpi";
+
+let query = "current_state artifact_123 timestamp_456 State" in
+let result = Elpi.Execute.once elpi_instance query in
+match result with
+| Elpi.Execute.Success data -> extract_state data
+| Elpi.Execute.Failure -> Error "no solution"
+----
+
+Called from Elixir via Port wrapping the OCaml/ELPI code.
+
+=== Analytics Layer (Julia)
+
+==== Module Structure
+
+[source,julia]
+----
+AnamnesisAnalytics/
+├── src/
+│   ├── AnamnesisAnalytics.jl   # Main module
+│   ├── rdf/
+│   │   ├── serialization.jl    # Serd.jl interface
+│   │   ├── sparql.jl           # HTTP.jl queries
+│   │   └── schema.jl           # Ontology constants
+│   ├── reservoir/
+│   │   ├── esn.jl              # ReservoirComputing.jl wrapper
+│   │   ├── embeddings.jl       # GraphNeuralNetworks.jl
+│   │   └── kbann.jl            # Knowledge-augmented networks
+│   ├── graphs/
+│   │   ├── conversion.jl       # RDF → MetaGraph
+│   │   └── analysis.jl         # Graph algorithms
+│   └── port_interface.jl       # Elixir communication
+└── test/
+    ├── rdf_tests.jl
+    └── reservoir_tests.jl
+----
+
+==== Key Dependencies
+
+[source,julia]
+----
+using Serd                      # RDF serialization
+using HTTP                      # SPARQL queries
+using JSON                      # Port protocol
+using Graphs, MetaGraphs        # Graph processing
+using ReservoirComputing        # ESN/reservoir
+using Flux                      # Deep learning (KBANN)
+using GraphNeuralNetworks       # Graph embeddings
+using CUDA                      # GPU acceleration (optional)
+----
+
+==== RDF Generation Pattern
+
+[source,julia]
+----
+function conversation_to_rdf(conv::Conversation)
+    triples = Triple[]
+
+    # Conversation metadata
+    conv_uri = URI("anamnesis:conv:$(conv.id)")
+    push!(triples, Triple(conv_uri, RDF.type, ANAMNESIS.Conversation))
+    push!(triples, Triple(conv_uri, ANAMNESIS.timestamp,
+                         Literal(conv.timestamp)))
+
+    # Messages
+    for msg in conv.messages
+        msg_uri = URI("anamnesis:msg:$(msg.id)")
+        push!(triples, Triple(msg_uri, RDF.type, ANAMNESIS.Message))
+        push!(triples, Triple(msg_uri, ANAMNESIS.partOf, conv_uri))
+        push!(triples, Triple(msg_uri, ANAMNESIS.content,
+                            Literal(msg.content)))
+        push!(triples, Triple(msg_uri, ANAMNESIS.speaker,
+                            URI("anamnesis:speaker:$(msg.speaker)")))
+    end
+
+    # Artifacts with lifecycle
+    for artifact in conv.artifacts
+        artifact_uri = URI("anamnesis:artifact:$(artifact.id)")
+        push!(triples, Triple(artifact_uri, RDF.type, ANAMNESIS.Artifact))
+        push!(triples, Triple(artifact_uri, ANAMNESIS.state,
+                            ANAMNESIS[artifact.current_state]))
+
+        # Lifecycle events
+        for event in artifact.lifecycle
+            event_uri = URI("anamnesis:event:$(uuid4())")
+            push!(triples, Triple(event_uri, RDF.type,
+                                ANAMNESIS.LifecycleEvent))
+            push!(triples, Triple(event_uri, ANAMNESIS.artifact,
+                                artifact_uri))
+            push!(triples, Triple(event_uri, ANAMNESIS.newState,
+                                ANAMNESIS[event.state]))
+            push!(triples, Triple(event_uri, ANAMNESIS.timestamp,
+                                Literal(event.timestamp)))
+        end
+    end
+
+    return triples
+end
+----
+
+=== Storage Layer (Virtuoso)
+
+==== Named Graph Strategy
+
+Each conversation stored in multiple named graphs:
+
+[source,sparql]
+----
+# Primary conversation data
+GRAPH <anamnesis:conv:12345> {
+    anamnesis:conv:12345 a anamnesis:Conversation ;
+        anamnesis:timestamp "2025-11-22T10:30:00Z"^^xsd:dateTime ;
+        anamnesis:contains anamnesis:msg:001, anamnesis:msg:002 .
+
+    anamnesis:msg:001 a anamnesis:Message ;
+        anamnesis:speaker anamnesis:speaker:claude ;
+        anamnesis:content "..." .
+}
+
+# Artifact lifecycle (separate graph for cleaner queries)
+GRAPH <anamnesis:artifacts:12345> {
+    anamnesis:artifact:abc123 a anamnesis:Artifact ;
+        anamnesis:state anamnesis:state:modified ;
+        anamnesis:hasLifecycle anamnesis:event:e1, anamnesis:event:e2 .
+
+    anamnesis:event:e1 a anamnesis:LifecycleEvent ;
+        anamnesis:newState anamnesis:state:created ;
+        anamnesis:timestamp "2025-11-22T10:31:00Z"^^xsd:dateTime .
+}
+
+# Cross-conversation links (global graph)
+GRAPH <anamnesis:links> {
+    anamnesis:msg:002 anamnesis:references anamnesis:artifact:xyz ;
+                      anamnesis:referencesConversation anamnesis:conv:67890 .
+}
+
+# Project categorization (fuzzy membership)
+GRAPH <anamnesis:categories:12345> {
+    anamnesis:conv:12345 anamnesis:belongsTo anamnesis:proj:anamnesis ;
+                         anamnesis:membershipStrength 0.8 .
+
+    anamnesis:conv:12345 anamnesis:belongsTo anamnesis:proj:rescript-evangeliser ;
+                         anamnesis:membershipStrength 0.3 .
+}
+----
+
+==== RDF Schema (Ontology)
+
+Core vocabulary defined in Turtle:
+
+[source,turtle]
+----
+@prefix anamnesis: <http://anamnesis.hyperpolymath.org/ns#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Classes
+anamnesis:Conversation a owl:Class ;
+    rdfs:label "Conversation" ;
+    rdfs:comment "A discussion thread from one or more LLMs" .
+
+anamnesis:Message a owl:Class ;
+    rdfs:label "Message" ;
+    rdfs:comment "A single message in a conversation" .
+
+anamnesis:Artifact a owl:Class ;
+    rdfs:label "Artifact" ;
+    rdfs:comment "Code, documentation, or other created content" .
+
+anamnesis:LifecycleEvent a owl:Class ;
+    rdfs:label "Lifecycle Event" ;
+    rdfs:comment "State transition in artifact lifecycle" .
+
+anamnesis:Project a owl:Class ;
+    rdfs:label "Project" ;
+    rdfs:comment "A project category" .
+
+anamnesis:Speaker a owl:Class ;
+    rdfs:label "Speaker" ;
+    rdfs:comment "Human or LLM participant" .
+
+# Properties
+anamnesis:contains a owl:ObjectProperty ;
+    rdfs:domain anamnesis:Conversation ;
+    rdfs:range anamnesis:Message .
+
+anamnesis:speaker a owl:ObjectProperty ;
+    rdfs:domain anamnesis:Message ;
+    rdfs:range anamnesis:Speaker .
+
+anamnesis:content a owl:DatatypeProperty ;
+    rdfs:domain anamnesis:Message ;
+    rdfs:range xsd:string .
+
+anamnesis:timestamp a owl:DatatypeProperty ;
+    rdfs:range xsd:dateTime .
+
+anamnesis:state a owl:ObjectProperty ;
+    rdfs:domain anamnesis:Artifact ;
+    rdfs:range anamnesis:State .
+
+anamnesis:hasLifecycle a owl:ObjectProperty ;
+    rdfs:domain anamnesis:Artifact ;
+    rdfs:range anamnesis:LifecycleEvent .
+
+anamnesis:references a owl:ObjectProperty ;
+    rdfs:label "references" ;
+    rdfs:comment "Cross-reference to artifact or conversation fragment" .
+
+anamnesis:belongsTo a owl:ObjectProperty ;
+    rdfs:domain anamnesis:Conversation ;
+    rdfs:range anamnesis:Project .
+
+anamnesis:membershipStrength a owl:DatatypeProperty ;
+    rdfs:comment "Fuzzy membership score (0.0 to 1.0)" ;
+    rdfs:range xsd:float .
+
+# States (individuals)
+anamnesis:state:created a anamnesis:State ;
+    rdfs:label "created" .
+
+anamnesis:state:modified a anamnesis:State ;
+    rdfs:label "modified" .
+
+anamnesis:state:removed a anamnesis:State ;
+    rdfs:label "removed" .
+
+anamnesis:state:evaluated a anamnesis:State ;
+    rdfs:label "evaluated" .
+----
+
+=== Visualization Layer (ReScript)
+
+==== Component Architecture
+
+[source,rescript]
+----
+visualization/
+├── src/
+│   ├── Anamnesis.res              (* Root module *)
+│   ├── bindings/
+│   │   ├── Reagraph.res           (* Graph visualization *)
+│   │   ├── Recharts.res           (* rescript-recharts wrapper *)
+│   │   └── SvarGantt.res          (* Timeline binding *)
+│   ├── components/
+│   │   ├── ConversationGraph.res  (* Main graph viz *)
+│   │   ├── ArtifactTimeline.res   (* Lifecycle Gantt *)
+│   │   ├── ProjectCategories.res  (* Fuzzy membership *)
+│   │   ├── SearchFilter.res       (* Interactive filtering *)
+│   │   └── EpisodeRecall.res      (* Memory queries *)
+│   ├── state/
+│   │   ├── AppState.res           (* useReducer pattern *)
+│   │   └── Api.res                (* Fetch from Elixir *)
+│   ├── types/
+│   │   ├── Domain.res             (* Core types *)
+│   │   └── GraphData.res          (* Graph structures *)
+│   └── transforms/
+│       ├── SparqlToGraph.res      (* SPARQL → Reagraph *)
+│       └── ColorMixing.res        (* Fuzzy category colors *)
+----
+
+==== Type-Safe Graph Representation
+
+[source,rescript]
+----
+module Domain = {
+  type messageId = MessageId(string)
+  type artifactId = ArtifactId(string)
+  type conversationId = ConversationId(string)
+
+  type nodeId =
+    | MessageNode(messageId)
+    | ArtifactNode(artifactId)
+
+  type edgeType =
+    | Contains
+    | References
+    | CreatedIn
+    | ModifiedIn
+
+  type node = {
+    id: nodeId,
+    label: string,
+    timestamp: Js.Date.t,
+    speaker: option<string>,
+    projects: array<projectMembership>,
+  }
+
+  and projectMembership = {
+    projectId: string,
+    strength: float,  /* 0.0 to 1.0 */
+  }
+
+  type edge = {
+    source: nodeId,
+    target: nodeId,
+    edgeType: edgeType,
+  }
+
+  type graph = {
+    nodes: array<node>,
+    edges: array<edge>,
+  }
+}
+----
+
+==== Fuzzy Category Visualization
+
+Color mixing based on project membership strengths:
+
+[source,rescript]
+----
+module ColorMixing = {
+  type rgb = {r: int, g: int, b: int}
+
+  let projectColors = Map.String.fromArray([
+    ("anamnesis", {r: 72, g: 187, b: 120}),      // Green
+    ("rescript-evangeliser", {r: 230, g: 74, b: 25}),  // Orange/Red
+    ("zotero-nsai", {r: 52, g: 152, b: 219}),    // Blue
+  ])
+
+  let mixColors = (memberships: array<Domain.projectMembership>): string => {
+    let totalWeight = memberships
+      ->Array.reduce(0.0, (acc, m) => acc +. m.strength)
+
+    if totalWeight == 0.0 {
+      "#999999"  // Gray for uncategorized
+    } else {
+      let mixed = memberships->Array.reduce(
+        {r: 0, g: 0, b: 0},
+        (acc, {projectId, strength}) => {
+          switch projectColors->Map.String.get(projectId) {
+          | None => acc
+          | Some(color) => {
+              r: acc.r + Float.toInt(Int.toFloat(color.r) *. strength),
+              g: acc.g + Float.toInt(Int.toFloat(color.g) *. strength),
+              b: acc.b + Float.toInt(Int.toFloat(color.b) *. strength),
+            }
+          }
+        }
+      )
+
+      let normalize = (v) => min(255, Float.toInt(
+        Int.toFloat(v) /. totalWeight
+      ))
+
+      `rgb(${Int.toString(normalize(mixed.r))},
+           ${Int.toString(normalize(mixed.g))},
+           ${Int.toString(normalize(mixed.b))})`
+    }
+  }
+}
+----
+
+== Integration Patterns
+
+=== OCaml ↔ Elixir (Ports)
+
+[source,elixir]
+----
+defmodule Anamnesis.ParserPort do
+  use GenServer
+
+  def start_link(_) do
+    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+  end
+
+  def init(_) do
+    port = Port.open({:spawn, "./bin/parser_port"}, [
+      {:packet, 4},
+      :binary,
+      :exit_status
+    ])
+    {:ok, %{port: port, pending: %{}}}
+  end
+
+  def handle_call({:parse, content}, from, state) do
+    ref = make_ref()
+    request = :erlang.term_to_binary(%{
+      ref: ref,
+      action: :parse,
+      content: content
+    })
+    Port.command(state.port, request)
+    {:noreply, %{state | pending: Map.put(state.pending, ref, from)}}
+  end
+
+  def handle_info({port, {:data, data}}, %{port: port} = state) do
+    response = :erlang.binary_to_term(data)
+    {from, pending} = Map.pop!(state.pending, response.ref)
+    GenServer.reply(from, response.result)
+    {:noreply, %{state | pending: pending}}
+  end
+end
+----
+
+=== Elixir ↔ Julia (Ports)
+
+[source,julia]
+----
+# julia_port.jl
+using JSON
+
+function main()
+    while true
+        # Read 4-byte length prefix
+        len_bytes = read(stdin, 4)
+        len = reinterpret(UInt32, len_bytes)[1]
+
+        # Read message
+        msg_bytes = read(stdin, len)
+        request = JSON.parse(String(msg_bytes))
+
+        # Process
+        result = process_request(request)
+
+        # Send response
+        response = JSON.json(result)
+        write(stdout, reinterpret(UInt8, [UInt32(length(response))]))
+        write(stdout, response)
+        flush(stdout)
+    end
+end
+
+function process_request(request)
+    action = request["action"]
+    if action == "generate_rdf"
+        conversation_to_rdf(request["conversation"])
+    elseif action == "sparql_query"
+        execute_sparql(request["query"])
+    else
+        Dict("error" => "unknown action")
+    end
+end
+
+main()
+----
+
+=== λProlog ↔ Virtuoso
+
+λProlog generates SPARQL queries, sends via HTTP:
+
+[source,prolog]
+----
+% find_contaminated_conversations(-ConvList)
+find_contaminated_conversations ConvList :-
+    sparql_query "
+        SELECT DISTINCT ?conv1 ?conv2 ?artifact
+        WHERE {
+            GRAPH ?g1 { ?conv1 anamnesis:discusses ?artifact . }
+            GRAPH ?g2 { ?conv2 anamnesis:discusses ?artifact . }
+            ?conv1 anamnesis:belongsTo ?proj1 .
+            ?conv2 anamnesis:belongsTo ?proj2 .
+            FILTER(?proj1 != ?proj2)
+            FILTER(?conv1 != ?conv2)
+        }
+    " Results,
+    extract_conversations Results ConvList.
+
+% sparql_query implementation calls HTTP endpoint
+sparql_query Query Results :-
+    http_post "http://localhost:8890/sparql" Query Response,
+    parse_sparql_json Response Results.
+----
+
+== Deployment Architecture
+
+=== Development Environment
+
+[source,yaml]
+----
+services:
+  virtuoso:
+    image: openlink/virtuoso-opensource-7:latest
+    ports:
+      - "8890:8890"
+      - "1111:1111"
+    volumes:
+      - virtuoso-data:/database
+    environment:
+      DBA_PASSWORD: anamnesis_dev
+
+  elixir:
+    build: ./orchestrator
+    ports:
+      - "4000:4000"
+    depends_on:
+      - virtuoso
+    volumes:
+      - ./orchestrator:/app
+      - ./parser/_build:/parser/_build  # OCaml binaries
+      - ./reasoning/_build:/reasoning/_build  # λProlog files
+    environment:
+      VIRTUOSO_ENDPOINT: http://virtuoso:8890/sparql
+      PARSER_PORT_PATH: /parser/_build/default/bin/parser_port
+      LAMBDA_PROLOG_PATH: /reasoning/_build/reasoner
+
+  julia:
+    build: ./learning
+    volumes:
+      - ./learning:/app
+    command: julia --project=/app julia_port.jl
+
+  rescript:
+    build: ./visualization
+    ports:
+      - "5173:5173"  # Vite dev server
+    volumes:
+      - ./visualization:/app
+    command: npm run dev
+
+volumes:
+  virtuoso-data:
+----
+
+=== Production Deployment
+
+[source,text]
+----
+Load Balancer (nginx)
+    ↓
+    ├─ Phoenix Endpoints (×3) - Elixir cluster
+    │  ├─ Parser Pool (4 workers each)
+    │  ├─ λProlog Port
+    │  └─ Julia Port
+    │
+    ├─ Static Assets (ReScript compiled JS)
+    │
+    └─ Virtuoso Cluster
+       ├─ Primary (read/write)
+       └─ Replica (read-only)
+----
+
+== Performance Considerations
+
+=== Scalability Targets
+
+[%header,cols="1,1,2"]
+|===
+| Component | Target | Strategy
+
+| **Parser throughput**
+| 100 conversations/sec
+| Parallel port processes, Angstrom incremental parsing
+
+| **λProlog queries**
+| <100ms per query
+| Cached results in ETS, batch queries
+
+| **SPARQL queries**
+| <50ms simple, <500ms complex
+| Virtuoso indexing, query optimization
+
+| **Graph visualization**
+| 1000-5000 nodes interactive
+| WebGL (Reagraph), LOD rendering, clustering
+
+| **RDF storage**
+| 10M+ triples
+| Virtuoso columnar storage, named graph partitioning
+|===
+
+=== Optimization Strategies
+
+==== OCaml Parser
+
+* Zero-copy parsing where possible (Angstrom)
+* Incremental parsing for large files
+* Parallel format detection (check signatures in parallel)
+* Compiled parser executables (native code)
+
+==== Elixir Orchestration
+
+* ETS caching for frequently accessed data
+* GenStage for backpressure in ingestion pipeline
+* Poolboy for port process pools
+* Phoenix PubSub for real-time updates
+
+==== Julia Analytics
+
+* Type stability (critical for performance)
+* SIMD operations (automatic in Julia)
+* GPU acceleration for large reservoirs (CUDA.jl)
+* Sparse matrices for graph operations
+* Batch processing (vectorized operations)
+
+==== Virtuoso Storage
+
+* Proper indexing on frequently queried properties
+* Named graph partitioning (per-conversation graphs)
+* Query result caching
+* Inference materialization for hot paths
+
+==== ReScript Visualization
+
+* Virtual scrolling for large lists
+* Memoization (`React.memo`, `useMemo`)
+* Debounced search/filter
+* Incremental graph loading (fetch visible subgraph)
+* WebWorkers for heavy computation
+
+== Testing Strategy
+
+=== Unit Testing
+
+[%header,cols="1,2,1"]
+|===
+| Component | Tooling | Coverage Target
+
+| **OCaml Parser**
+| Alcotest, qcheck (property-based)
+| 90%+
+
+| **Elixir Orchestration**
+| ExUnit, StreamData
+| 85%+
+
+| **λProlog Reasoning**
+| Custom test harness
+| Example-driven
+
+| **Julia Analytics**
+| Test.jl, Aqua.jl
+| 80%+
+
+| **ReScript UI**
+| Jest, React Testing Library
+| 75%+
+|===
+
+=== Integration Testing
+
+* **Parser → Orchestration**: Port protocol correctness
+* **Orchestration → Storage**: RDF round-trip accuracy
+* **Reasoning → Storage**: SPARQL query correctness
+* **End-to-end**: Full pipeline (conversation file → visualization)
+
+=== Property-Based Testing
+
+OCaml parser properties (qcheck):
+
+[source,ocaml]
+----
+let prop_parse_idempotent =
+  QCheck.(Test.make ~count:1000
+    (pair Arbitrary.conversation string)
+    (fun (conv, _) ->
+      let json = Generic.to_json conv in
+      let parsed = ClaudeParser.parse json in
+      match parsed with
+      | Ok conv' -> Generic.equal conv conv'
+      | Error _ -> false
+    ))
+----
+
+=== Proving Ground Testing
+
+Test on real contaminated data:
+
+. Copy `zotero-voyant-export` to `proving-ground/`
+. Run full pipeline on contaminated conversations
+. Validate:
+  * All conversations parsed correctly
+  * Anamnesis-related discussions detected as contamination
+  * Artifacts properly tracked
+  * Cross-conversation references resolved
+. Store iterations for comparison
+
+== Security Considerations
+
+=== Threat Model
+
+[%header,cols="1,2,2"]
+|===
+| Threat | Risk | Mitigation
+
+| **Malicious conversation files**
+| Parser crash/exploit
+| Process isolation (Ports), input validation
+
+| **SPARQL injection**
+| Unauthorized data access
+| Parameterized queries, input sanitization
+
+| **Port command injection**
+| System compromise
+| Strict input validation, no shell execution
+
+| **ReScript XSS**
+| Client-side exploit
+| Type-safe rendering, CSP headers
+
+| **DoS via large files**
+| Resource exhaustion
+| File size limits, streaming parsing, timeouts
+|===
+
+=== Data Privacy
+
+* Conversations may contain sensitive information
+* **No external API calls** without explicit user consent
+* Local-first architecture (all data stays on user's infrastructure)
+* Optional encryption at rest (Virtuoso supports)
+
+== Monitoring & Observability
+
+=== Metrics
+
+* **Parser**: Parse time, error rate, throughput
+* **Ports**: Message latency, queue depth, crash rate
+* **Virtuoso**: Query time, triple count, graph count
+* **Reservoir**: Training time, prediction accuracy
+* **UI**: Page load time, interaction latency
+
+=== Logging
+
+Structured logging via:
+
+* OCaml: `Logs` library
+* Elixir: `Logger` with metadata
+* Julia: Custom logger to JSON
+* All logs → centralized (e.g., Loki)
+
+=== Telemetry
+
+Elixir Telemetry events:
+
+[source,elixir]
+----
+:telemetry.execute(
+  [:anamnesis, :parser, :parse],
+  %{duration: duration_ms},
+  %{format: format, size: byte_size}
+)
+----
+
+== Future Enhancements
+
+=== Phase 3+
+
+* **Multi-modal conversations** - Images, voice transcripts
+* **Real-time ingestion** - Watch conversation files, auto-ingest
+* **Collaborative features** - Multi-user annotations, shared graphs
+* **Advanced reasoning** - Causal inference, counterfactual queries
+* **Export formats** - Markdown summaries, LaTeX reports, Obsidian vaults
+* **Federated knowledge graphs** - Link to external ontologies (DBpedia, Wikidata)
+* **Mobile client** - ReScript Native for iOS/Android
+
+=== Research Opportunities
+
+* **Novel KBANN + Reservoir hybrid** - Knowledge-augmented ESNs
+* **Temporal knowledge graph reasoning** - Reservoir computing for dynamic KGs
+* **Multi-LLM conversation untangling** - No prior work found
+* **Agnotology detection** - Identify culturally-induced ignorance in conversations
+* **Episodic memory models** - Formal semantics in λProlog
+
+== Conclusion
+
+The Anamnesis architecture leverages best-of-breed technologies for each layer:
+
+* **OCaml** for safe, performant parsing
+* **Elixir** for fault-tolerant orchestration
+* **λProlog** for meta-reasoning with formal semantics
+* **Julia** for scientific computing without Python
+* **Virtuoso** for standards-compliant RDF storage
+* **ReScript** for type-safe, functional visualization
+
+This multi-language approach embraces each language's strengths, connected via well-defined boundaries (Ports, HTTP, SPARQL). The result is an academically rigorous, production-ready system for extracting knowledge from tangled multi-LLM conversations.
+
+== Appendices
+
+=== Glossary
+
+[%header,cols="1,3"]
+|===
+| Term | Definition
+
+| **HOAS**
+| Higher-Order Abstract Syntax - representing binding structures using meta-language bindings
+
+| **ESN**
+| Echo State Network - type of reservoir computing neural network
+
+| **KBANN**
+| Knowledge-Based Artificial Neural Network - neural nets initialized from symbolic rules
+
+| **RDF**
+| Resource Description Framework - W3C standard for knowledge graphs
+
+| **SPARQL**
+| SPARQL Protocol and RDF Query Language - query language for RDF
+
+| **Named Graph**
+| RDF quads (subject-predicate-object-graph) for partitioning triples
+
+| **Episodic Memory**
+| Memory of specific events/episodes with temporal/spatial context
+
+| **Fuzzy Membership**
+| Partial belonging to categories (e.g., 60% Project A, 30% Project B)
+
+| **Artifact Lifecycle**
+| State transitions of created content (created→modified→removed→evaluated)
+
+| **Contamination**
+| Mixed-project discussions that should be untangled
+|===
+
+=== References
+
+* Miller, D., & Nadathur, G. (2012). _Programming with Higher-Order Logic_. Cambridge University Press.
+* Martinuzzi, F., et al. (2022). ReservoirComputing.jl: An Efficient and Modular Library for Reservoir Computing Models. _JMLR_, 23(288), 1-8.
+* Towell, G., & Shavlik, J. (1994). Knowledge-Based Artificial Neural Networks. _Artificial Intelligence_, 70(1-2), 119-165.
+* W3C (2013). SPARQL 1.1 Query Language. https://www.w3.org/TR/sparql11-query/
+* Dumbrava, S., & Guidi, F. (2015). ELPI: Fast, Embeddable, λProlog Interpreter. _LPAR_.
+
+=== ATD Schema Example (Claude Format)
+
+[source,ocaml]
+----
+(* conversation_types.atd *)
+
+type conversation = {
+  id: string;
+  ~platform: string;  (* "claude", "chatgpt", etc. *)
+  timestamp: float;
+  messages: message list;
+  ~artifacts: artifact list;
+  ~metadata: (string * string) list;
+}
+
+type message = {
+  id: string;
+  speaker: speaker;
+  content: string;
+  timestamp: float;
+  ~references: string list;  (* IDs of referenced artifacts/messages *)
+}
+
+type speaker = [
+  | Human
+  | LLM of string  (* "claude-3.5-sonnet", "gpt-4", etc. *)
+]
+
+type artifact = {
+  id: string;
+  ~name: string nullable;
+  artifact_type: artifact_type;
+  content: string;
+  created_in: string;  (* message ID *)
+  ~modified_in: string list;
+  current_state: lifecycle_state;
+}
+
+type artifact_type = [
+  | Code of string  (* language *)
+  | Documentation
+  | Configuration
+  | Other
+]
+
+type lifecycle_state = [
+  | Created
+  | Modified
+  | Removed
+  | Evaluated
+]
+----
+
+---
+
+_Document Version: 0.1.0_
+_Last Updated: 2025-11-22_
+_Architecture Status: Planning Phase_

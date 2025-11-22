@@ -1,0 +1,27 @@
+(lang dune 3.0)
+(name anamnesis_parser)
+(version 0.1.0)
+
+(generate_opam_files true)
+
+(source (github Hyperpolymath/convesation-spaghetti))
+(authors "Hyperpolymath")
+(maintainers "Hyperpolymath")
+(license "TBD")
+
+(package
+ (name anamnesis_parser)
+ (synopsis "OCaml parser for multi-LLM conversation formats")
+ (description "Type-safe parsing of Claude, ChatGPT, Mistral, and other conversation formats using Angstrom combinators and Atdgen code generation")
+ (depends
+  (ocaml (>= 5.0))
+  (dune (>= 3.0))
+  (angstrom (>= 0.15.0))
+  (atdgen (>= 2.16.0))
+  (atdgen-runtime (>= 2.16.0))
+  (yojson (>= 3.0.0))
+  (alberto (>= 0.1.0))
+  (ptime (>= 1.0.0))
+  (re (>= 1.10.0))
+  (alcotest :with-test)
+  (qcheck :with-test)))

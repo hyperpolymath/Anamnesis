@@ -1,0 +1,1005 @@
+= PuppyGraph Stack Evaluation for Anamnesis
+:author: Claude Code (Research Assistant)
+:date: 2025-11-22
+:toc: left
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
+:experimental:
+:stem:
+
+== Executive Summary
+
+This document evaluates **PuppyGraph** as a potential graph database solution for the Anamnesis project, comparing it against the currently planned **Virtuoso + SPARQL** stack. The evaluation considers architecture, query capabilities, integration options, performance characteristics, and alignment with project requirements.
+
+.Key Findings
+[%header,cols="1,3"]
+|===
+| Category | Assessment
+
+| Architecture
+| Zero-ETL graph query engine (not a database), operates on existing data stores
+
+| Query Languages
+| Gremlin + openCypher (property graphs) vs. SPARQL (RDF triplestores)
+
+| RDF Support
+| ❌ Not native; property graph model incompatible with RDF semantics
+
+| Integration
+| ✅ Feasible via Gremlin clients (Elixir, OCaml), limited Julia support
+
+| Performance
+| Excellent for lakehouse/warehouse queries, but different use case than Anamnesis
+
+| Recommendation
+| **❌ NOT RECOMMENDED** - Fundamental architecture mismatch with project requirements
+|===
+
+== Overview
+
+=== What is PuppyGraph?
+
+PuppyGraph is the **first and only real-time, zero-ETL graph query engine** in the market. Unlike traditional graph databases, PuppyGraph does not store data itself. Instead, it provides a virtual graph layer over existing data infrastructure.
+
+.PuppyGraph Architecture
+[source,text]
+----
+┌─────────────────────────────────────────┐
+│  PuppyGraph Query Engine (Compute)      │
+│  - Gremlin Query Processor              │
+│  - openCypher Query Processor           │
+│  - Vectorized Execution                 │
+└─────────────┬───────────────────────────┘
+              │
+              │ Zero-ETL (Direct Query)
+              │
+    ┌─────────┴─────────────┐
+    │                       │
+┌───▼────────┐      ┌──────▼──────┐
+│ Data Lakes │      │ Databases   │
+│ - Iceberg  │      │ - PostgreSQL│
+│ - Hudi     │      │ - MySQL     │
+│ - DuckDB   │      │ - BigQuery  │
+└────────────┘      └─────────────┘
+----
+
+.Core Architectural Principles
+* **Separation of Compute and Storage**: Query engine decoupled from data storage
+* **Zero-ETL**: No data duplication or migration required
+* **Virtual Graph Layer**: Builds graph model on-the-fly from relational/columnar data
+* **Columnar Optimization**: Leverages columnar storage for efficient graph queries
+
+=== Key Features
+
+Rapid Deployment:: Deploy and query graph data in under 10 minutes
+Petabyte-Scale Performance:: Execute 10-hop queries across 500M edges in ~2.26 seconds
+Multi-Source Federation:: Query across PostgreSQL, Iceberg, Hudi, DuckDB, BigQuery simultaneously
+Dual Query Language Support:: Both Gremlin and openCypher supported equally
+Cloud-Native Architecture:: Runs on AWS, Azure, GCP with elastic scaling
+
+== PuppyGraph vs Virtuoso Comparison
+
+=== Data Model Fundamentals
+
+This is the **most critical difference** for Anamnesis:
+
+.Property Graph vs RDF Triplestore
+[%header,cols="2,3,3"]
+|===
+| Aspect | Property Graph (PuppyGraph) | RDF Triplestore (Virtuoso)
+
+| Data Structure
+| Nodes with labels and properties + Relationships with types and properties
+| Subject-Predicate-Object triples (quads with named graphs)
+
+| Schema
+| Flexible, dynamic schema per node/edge
+| Schema-free with optional ontologies (RDFS/OWL)
+
+| Relationships
+| First-class citizens with properties and directionality
+| URIs representing predicates; reification needed for metadata
+
+| Identifiers
+| Internal IDs + application-level properties
+| Global URIs (IRI) for universal identification
+
+| Standards
+| No universal standard (vendor-specific models)
+| W3C standards (RDF, RDFS, OWL, SPARQL)
+
+| Interoperability
+| Limited to same technology stack
+| ✅ **High**: RDF allows cross-system knowledge graph integration
+
+| Inference
+| Application-level only
+| ✅ **Native**: RDFS/OWL reasoning built into query engine
+|===
+
+==== Why This Matters for Anamnesis
+
+The Anamnesis project requires:
+
+1. **Multi-category membership**: RDF's flexible triple model naturally supports this
+2. **Cross-conversation fragment linking**: URIs enable global, unambiguous references
+3. **Episodic memory structures**: Named graphs (RDF quads) align perfectly
+4. **Fuzzy boundaries**: OWL/RDFS reasoning handles uncertainty better than property graphs
+5. **Artifact lifecycle tracking**: RDF reification or RDF-star for metadata on metadata
+
+Property graphs excel at different use cases:
+
+* Social network traversals (friend-of-friend queries)
+* Real-time transaction processing
+* Application-specific graph models with complex edge properties
+
+=== Query Language Comparison
+
+.SPARQL vs Gremlin/openCypher
+[%header,cols="2,3,3"]
+|===
+| Feature | SPARQL (Virtuoso) | Gremlin/openCypher (PuppyGraph)
+
+| Query Paradigm
+| Declarative pattern matching (SQL-like)
+| Imperative traversal (Gremlin) + Declarative (Cypher)
+
+| Federated Queries
+| ✅ Native `SERVICE` clause for cross-endpoint queries
+| ❌ Limited to PuppyGraph-managed sources
+
+| Inference
+| ✅ Built-in reasoning (rdfs:subClassOf, owl:sameAs)
+| ❌ No native inference support
+
+| Standards
+| ✅ W3C standard with extensive tooling
+| Partial (openCypher open-spec, Gremlin Apache project)
+
+| Graph Traversal
+| Pattern-based (less efficient for deep traversals)
+| ✅ Optimized for multi-hop neighbor queries
+
+| Aggregations
+| Standard SQL-like (GROUP BY, COUNT, AVG)
+| Both support similar aggregation patterns
+
+| Geospatial
+| Via extensions (GeoSPARQL)
+| Database-dependent (varies by backend)
+|===
+
+==== Example Query Comparison
+
+Finding all artifacts modified in conversations about "Anamnesis":
+
+.SPARQL (Virtuoso)
+[source,sparql]
+----
+PREFIX ana: <http://anamnesis.io/vocab/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?artifact ?modifiedDate WHERE {
+  ?conversation ana:hasTopic "Anamnesis" .
+  ?conversation ana:containsFragment ?fragment .
+  ?fragment ana:modifiesArtifact ?artifact .
+  ?artifact ana:modifiedAt ?modifiedDate .
+}
+ORDER BY DESC(?modifiedDate)
+----
+
+.Gremlin (PuppyGraph)
+[source,groovy]
+----
+g.V().has('Conversation', 'topic', 'Anamnesis')
+  .out('containsFragment')
+  .out('modifiesArtifact')
+  .project('artifact', 'modifiedDate')
+    .by('uri')
+    .by('modifiedAt')
+  .order().by('modifiedDate', desc)
+----
+
+.openCypher (PuppyGraph)
+[source,cypher]
+----
+MATCH (c:Conversation {topic: 'Anamnesis'})-[:CONTAINS_FRAGMENT]->(f)-[:MODIFIES]->(a:Artifact)
+RETURN a.uri AS artifact, a.modifiedAt AS modifiedDate
+ORDER BY modifiedDate DESC
+----
+
+=== Integration with Anamnesis Tech Stack
+
+==== Elixir Integration
+
+.Virtuoso + SPARQL
+[source,elixir]
+----
+# Using SPARQL.Client (mature library)
+defmodule Anamnesis.KnowledgeGraph do
+  alias SPARQL.Client
+
+  def query_artifacts(topic) do
+    """
+    PREFIX ana: <http://anamnesis.io/vocab/>
+    SELECT ?artifact WHERE {
+      ?conv ana:hasTopic "#{topic}" .
+      ?conv ana:containsFragment/ana:modifiesArtifact ?artifact .
+    }
+    """
+    |> Client.query("http://localhost:8890/sparql")
+  end
+end
+----
+
+Pros:
+
+* ✅ Mature `sparql_client` library available on Hex
+* ✅ Native HTTP-based protocol (no special drivers needed)
+* ✅ Excellent error handling and result parsing
+
+.PuppyGraph + Gremlin
+[source,elixir]
+----
+# Using Gremlex (Apache TinkerPop client)
+defmodule Anamnesis.GraphQuery do
+  alias Gremlex.Graph
+
+  def query_artifacts(topic) do
+    Graph.g()
+    |> Graph.v()
+    |> Graph.has("Conversation", "topic", topic)
+    |> Graph.out("containsFragment")
+    |> Graph.out("modifiesArtifact")
+    |> Graph.values("uri")
+  end
+end
+----
+
+Pros:
+
+* ✅ Gremlex available on Hex (community-maintained)
+* ⚠️  More complex WebSocket-based protocol
+* ⚠️  Less mature ecosystem than SPARQL clients
+
+==== Julia Integration
+
+.Virtuoso + SPARQL
+[source,julia]
+----
+# Using SPARQL.jl or custom HTTP client
+using HTTP, JSON
+
+function query_knowledge_graph(topic::String)
+    query = """
+    PREFIX ana: <http://anamnesis.io/vocab/>
+    SELECT ?artifact WHERE {
+      ?conv ana:hasTopic "$topic" .
+      ?conv ana:containsFragment/ana:modifiesArtifact ?artifact .
+    }
+    """
+
+    response = HTTP.post(
+        "http://localhost:8890/sparql",
+        ["Content-Type" => "application/sparql-query"],
+        query
+    )
+
+    JSON.parse(String(response.body))
+end
+----
+
+Julia RDF Libraries:
+
+* **Semantic.jl**: Basic RDF manipulation (limited development)
+* **RDFLib.jl**: Julia port of Python rdflib (unmaintained)
+* **Custom HTTP clients**: Direct SPARQL queries via HTTP.jl ✅
+
+.PuppyGraph + Bolt/Cypher
+[source,julia]
+----
+# Using Neo4jBolt.jl (supports Bolt protocol)
+using Neo4jBolt
+
+conn = Neo4jBolt.connect("bolt://localhost:7687")
+
+query = """
+MATCH (c:Conversation {topic: \$topic})-[:CONTAINS_FRAGMENT]->(f)-[:MODIFIES]->(a:Artifact)
+RETURN a.uri
+"""
+
+results = Neo4jBolt.execute(conn, query, topic="Anamnesis")
+----
+
+Pros:
+
+* ✅ Neo4jBolt.jl available for Bolt protocol
+* ⚠️  No Gremlin client available for Julia
+* ⚠️  Limited graph database ecosystem
+
+==== OCaml Integration
+
+.Virtuoso + SPARQL
+[source,ocaml]
+----
+(* Using OCaml-RDF library *)
+open Rdf_sparql
+
+let query_artifacts topic =
+  let query = Printf.sprintf {|
+    PREFIX ana: <http://anamnesis.io/vocab/>
+    SELECT ?artifact WHERE {
+      ?conv ana:hasTopic "%s" .
+      ?conv ana:containsFragment/ana:modifiesArtifact ?artifact .
+    }
+  |} topic in
+
+  let endpoint = "http://localhost:8890/sparql" in
+  execute_select endpoint query
+----
+
+OCaml RDF Libraries:
+
+* **OCaml-RDF (zoggy)**: Mature, LGPL v3, full SPARQL support ✅
+* **ocaml-rdf (openEngiadina)**: Functional/persistent approach, newer
+
+.PuppyGraph + Gremlin
+[source,ocaml]
+----
+(* Using gremlin OCaml library *)
+open Gremlin
+
+let query_artifacts topic =
+  let query =
+    g#v ()
+    |> has "Conversation" "topic" topic
+    |> out "containsFragment"
+    |> out "modifiesArtifact"
+    |> values "uri"
+  in
+  execute query
+----
+
+OCaml Graph Database Libraries:
+
+* **gremlin (0.1.1)**: Basic Apache TinkerPop3 client (limited)
+* **ocaml-neo4j**: Neo4j REST API client for Cypher
+
+.Integration Summary
+[%header,cols="2,2,2,2"]
+|===
+| Language | Virtuoso/SPARQL | PuppyGraph/Gremlin | Recommendation
+
+| Elixir
+| ✅ Excellent (`sparql_client`)
+| ⚠️  Good (`gremlex`)
+| **Virtuoso**
+
+| Julia
+| ✅ Good (HTTP.jl + SPARQL)
+| ⚠️  Limited (Neo4jBolt.jl only)
+| **Virtuoso**
+
+| OCaml
+| ✅ Excellent (OCaml-RDF)
+| ⚠️  Limited (gremlin 0.1.1)
+| **Virtuoso**
+|===
+
+=== Performance Characteristics
+
+==== PuppyGraph Performance
+
+Optimized For:
+
+* **OLAP graph analytics** on data lakes/warehouses
+* **Multi-hop traversals** (10-hop queries in 2.26s across 500M edges)
+* **Lakehouse architectures** (Iceberg, Hudi, Delta Lake)
+* **Zero-copy queries** (no ETL overhead)
+
+Performance Claims:
+
+* Petabyte-scale datasets supported
+* Sub-second multi-hop queries on columnar storage
+* Vectorized execution engine
+* Automatic query pushdown to data sources
+
+Limitations:
+
+* ❌ Performance tied to underlying data source capabilities
+* ❌ Not optimized for frequent writes (depends on backend)
+* ❌ Inference/reasoning not supported (application-level only)
+
+==== Virtuoso Performance
+
+Optimized For:
+
+* **SPARQL query optimization** (compiles to SQL internally)
+* **RDF quad storage** with custom data types
+* **Full-text search** on triple objects
+* **Inference/reasoning** (RDFS/OWL built-in)
+
+Performance Benchmarks:
+
+* Berlin SPARQL Benchmark (BSBM): Short load times, high query throughput
+* Faster RDF/XML loading than most competitors (2x+ vs alternatives)
+* Native IRI data type for efficient URI handling
+* Full-text indexing built-in
+
+Write Performance:
+
+* ✅ Optimized for RDF ingestion and updates
+* ✅ Transaction support (ACID compliance)
+
+.Performance Comparison
+[%header,cols="2,2,2"]
+|===
+| Workload Type | PuppyGraph | Virtuoso
+
+| Graph Traversal (10-hop)
+| ✅ Excellent (2.26s @ 500M edges)
+| ⚠️  Good (depends on query complexity)
+
+| Pattern Matching
+| ⚠️  Good (via openCypher/Gremlin)
+| ✅ Excellent (SPARQL optimized)
+
+| Inference/Reasoning
+| ❌ Not supported
+| ✅ Native RDFS/OWL support
+
+| Write Performance
+| ⚠️  Backend-dependent
+| ✅ Optimized for RDF ingestion
+
+| Scalability
+| ✅ Petabyte-scale (lakehouse)
+| ✅ Billions of triples
+
+| Data Loading
+| ⚠️  Depends on backend
+| ✅ Fast RDF/XML loading
+|===
+
+=== Supported Data Sources
+
+==== PuppyGraph Data Sources
+
+.Natively Supported
+* **Data Lakes**: Apache Iceberg, Apache Hudi, Delta Lake, DuckDB
+* **Databases**: PostgreSQL, MySQL, BigQuery
+* **Warehouses**: Snowflake, AWS Redshift, CelerData
+* **Catalogs**: AWS Glue, Hive Metastore
+
+The zero-ETL architecture allows PuppyGraph to query these sources **in-place** without data duplication.
+
+==== Virtuoso Data Sources
+
+.Native Storage
+* **RDF Formats**: RDF/XML, Turtle, N-Triples, N-Quads, JSON-LD
+* **Direct Import**: CSV, TSV via RDF mapping
+* **SQL Tables**: Native RDBMS with RDF views
+
+.Federated Queries
+* **SPARQL Endpoints**: Query remote triplestores via `SERVICE` clause
+* **Linked Data**: Dereference HTTP URIs for RDF content
+
+=== RDF Support Analysis
+
+This is the **critical decision factor** for Anamnesis.
+
+==== PuppyGraph's RDF Limitations
+
+Property Graph Model::
+PuppyGraph uses a **property graph** model (nodes + edges with properties), fundamentally different from RDF's **triple/quad** model.
+
+No Native RDF::
+* ❌ No RDF ingestion (Turtle, N-Triples, RDF/XML)
+* ❌ No SPARQL query support (Gremlin/Cypher only)
+* ❌ No named graphs (RDF quads)
+* ❌ No IRI/URI as first-class identifiers
+
+Limited RDF Integration::
+Some SPARQL integration available through graph-notebook library, but this is a **workaround**, not native support.
+
+Conversion Challenges::
+Converting RDF to property graphs loses semantic richness:
+
+* **URI semantics**: RDF URIs are globally unique; property graph IDs are local
+* **Reification**: RDF metadata-on-metadata has no clean property graph equivalent
+* **Blank nodes**: RDF's existential blank nodes don't map cleanly
+* **Inference**: RDFS/OWL reasoning requires triple semantics
+
+==== Virtuoso's RDF Excellence
+
+Native RDF Storage::
+* ✅ Custom IRI data type for efficient URI handling
+* ✅ RDF quad store (named graphs native)
+* ✅ All standard RDF formats supported
+
+SPARQL 1.1 Compliance::
+* ✅ Full SPARQL 1.1 protocol support
+* ✅ Federated queries (`SERVICE`)
+* ✅ Property paths, subqueries, aggregations
+* ✅ GeoSPARQL extension available
+
+Inference Engine::
+* ✅ RDFS reasoning (subClassOf, subPropertyOf)
+* ✅ OWL reasoning (DL subset)
+* ✅ Custom inference rules
+
+== Alignment with Anamnesis Requirements
+
+=== Project Requirements Review
+
+From the CLAUDE.md specification, Anamnesis needs:
+
+.Core Requirements
+[%header,cols="2,3,1,1"]
+|===
+| Requirement | Description | PuppyGraph | Virtuoso
+
+| Multi-category membership
+| Conversations span multiple projects
+| ⚠️  Possible but awkward
+| ✅ Natural with RDF
+
+| Episodic memory structure
+| Temporal, contextualized knowledge
+| ⚠️  Application-level
+| ✅ Named graphs (quads)
+
+| Fuzzy boundaries
+| Not rigid categorization
+| ⚠️  Hard in property graphs
+| ✅ RDFS/OWL reasoning
+
+| Artifact lifecycle tracking
+| created→modified→removed→evaluated
+| ⚠️  Requires reification workarounds
+| ✅ RDF-star or reification
+
+| Cross-conversation linking
+| Fragment relationships across threads
+| ⚠️  Local IDs only
+| ✅ Global URIs
+|===
+
+=== Data Source Alignment
+
+Anamnesis data sources:
+
+* **Current**: Claude JSON, Mistral, ChatGPT, LMArena, Copilot, Genesis, Edge Phi3, Firefox/Chrome, git logs, local LLMs
+* **Future**: WhatsApp, LinkedIn
+
+Neither PuppyGraph nor Virtuoso directly ingest these formats. Both require:
+
+1. **Parsing** (OCaml layer) to extract conversation structure
+2. **Transformation** to target data model
+3. **Storage** in graph database
+
+.Transformation Complexity
+[%header,cols="2,3,3"]
+|===
+| Aspect | PuppyGraph | Virtuoso
+
+| Parse LLM JSON
+| Same complexity (OCaml parser)
+| Same complexity (OCaml parser)
+
+| Model conversations
+| Create nodes for conversations, fragments, artifacts
+| Create RDF triples with URIs
+
+| Store artifacts
+| Insert into backend (PostgreSQL/DuckDB)
+| INSERT DATA into Virtuoso
+
+| Link fragments
+| Create edges with relationship types
+| Create predicates (URIs)
+
+| Global identifiers
+| ❌ Application must manage UUIDs
+| ✅ URIs provide global uniqueness
+|===
+
+PuppyGraph's "zero-ETL" value proposition **does not apply** to Anamnesis because:
+
+* We're not querying existing relational data as graphs
+* We're **creating new graph data** from unstructured LLM conversations
+* The data doesn't exist in Iceberg/Hudi/PostgreSQL yet
+
+=== Architectural Fit
+
+.Anamnesis Architecture (Planned)
+[source,text]
+----
+┌────────────────────────────────────────────┐
+│  LLM Conversation Sources                  │
+│  (Claude, Mistral, ChatGPT, git logs...)   │
+└───────────────┬────────────────────────────┘
+                │
+                ▼
+┌───────────────────────────────────────────┐
+│  OCaml Parser (Combinators)               │
+│  - Extract conversation structure          │
+│  - Identify artifacts + lifecycles         │
+│  - Build fragment graph                    │
+└───────────────┬───────────────────────────┘
+                │
+                ▼
+┌───────────────────────────────────────────┐
+│  Elixir Orchestrator                       │
+│  - Coordinate parsing + storage            │
+│  - Manage concurrent processing            │
+└───────────────┬───────────────────────────┘
+                │
+        ┌───────┴────────┐
+        ▼                ▼
+┌──────────────┐  ┌──────────────────────┐
+│ Knowledge    │  │ λProlog Reasoning    │
+│ Graph        │◄─┤ (Meta-reasoning)     │
+│              │  │                      │
+│ [THIS LAYER] │  └──────────────────────┘
+└──────┬───────┘
+       │
+       ▼
+┌──────────────────────┐
+│ Julia ML/Analysis    │
+│ - KBANN              │
+│ - Reservoir computing│
+└──────────────────────┘
+----
+
+.PuppyGraph Fit Assessment
+[cols="1,3,1"]
+|===
+| Factor | Analysis | Rating
+
+| Zero-ETL Value
+| ❌ Not applicable - we're creating new data, not querying existing relational stores
+| N/A
+
+| Property Graph Model
+| ⚠️  Requires complex workarounds for RDF semantics (URIs, reification, inference)
+| Poor
+
+| Integration Overhead
+| Need to manage backend (PostgreSQL/DuckDB) + PuppyGraph query engine
+| High
+
+| λProlog Integration
+| ⚠️  Would need to convert property graph to logic programming facts (extra layer)
+| Awkward
+|===
+
+.Virtuoso Fit Assessment
+[cols="1,3,1"]
+|===
+| Factor | Analysis | Rating
+
+| RDF Native
+| ✅ Direct mapping from parsed conversations to RDF triples
+| Excellent
+
+| SPARQL
+| ✅ Standard query language, mature tooling, λProlog can query SPARQL endpoints
+| Excellent
+
+| Inference
+| ✅ RDFS/OWL reasoning aligns with λProlog meta-reasoning approach
+| Excellent
+
+| Integration
+| ✅ Single component (no separate backend needed)
+| Simple
+|===
+
+== Query Capability Assessment
+
+=== Graph Query Patterns for Anamnesis
+
+Common queries the system needs to support:
+
+1. **Artifact Lifecycle Tracking**
++
+[source,sparql]
+----
+# Find all modifications to artifact X across all conversations
+SELECT ?fragment ?conversation ?timestamp ?action WHERE {
+  ?fragment ana:affectsArtifact <artifact:X> ;
+           ana:action ?action ;
+           ana:timestamp ?timestamp .
+  ?conversation ana:containsFragment ?fragment .
+}
+ORDER BY ?timestamp
+----
+
+2. **Cross-Conversation Fragment Linking**
++
+[source,sparql]
+----
+# Find all fragments related to fragment X in other conversations
+SELECT ?relatedFragment ?conversation ?relationType WHERE {
+  <fragment:X> ana:relatedTo ?relatedFragment .
+  ?relatedFragment ana:relationType ?relationType .
+  ?conversation ana:containsFragment ?relatedFragment .
+  FILTER(?conversation != ?conv1)
+}
+----
+
+3. **Multi-Project Membership**
++
+[source,sparql]
+----
+# Find all conversations discussing both "Anamnesis" and "Zotero"
+SELECT ?conversation WHERE {
+  ?conversation ana:hasTopic "Anamnesis" ;
+               ana:hasTopic "Zotero" .
+}
+----
+
+4. **Fuzzy Categorization with Reasoning**
++
+[source,sparql]
+----
+# Find all knowledge-management-related topics (using subClassOf inference)
+SELECT ?conversation ?topic WHERE {
+  ?conversation ana:hasTopic ?topic .
+  ?topic rdfs:subClassOf* ana:KnowledgeManagement .
+}
+----
+
+=== PuppyGraph Limitations for These Queries
+
+1. **No Inference**: Query #4 requires RDFS reasoning (not supported)
+2. **URI Complexity**: Queries reference specific artifacts/fragments by global URI
+3. **Temporal Reasoning**: Limited temporal query support (backend-dependent)
+4. **No Federated Queries**: Cannot query external knowledge graphs
+
+=== Virtuoso Advantages
+
+1. ✅ **Native RDFS Reasoning**: Query #4 works out-of-the-box
+2. ✅ **URI First-Class**: All queries use standard URIs
+3. ✅ **Federated SPARQL**: Can integrate external ontologies (FOAF, Dublin Core, etc.)
+4. ✅ **Full-Text Search**: Built-in for fragment content search
+
+== Cost and Operational Considerations
+
+=== PuppyGraph
+
+Licensing::
+* Free tier available
+* Professional edition on AWS Marketplace
+* Pricing based on compute resources
+
+Operational Complexity::
+* ⚠️  Requires managing backend data store (PostgreSQL, DuckDB, etc.)
+* ⚠️  Additional layer (query engine + storage)
+* ⚠️  Monitoring both PuppyGraph and backend
+
+Scaling::
+* ✅ Cloud-native, elastic scaling
+* ✅ Petabyte-scale capability (if using lakehouse)
+
+=== Virtuoso
+
+Licensing::
+* ✅ Open Source Edition available (GPLv2)
+* Commercial edition for enterprise features
+* Self-hosted or cloud deployment
+
+Operational Complexity::
+* ✅ Single component (database + query engine integrated)
+* ✅ Mature monitoring and tooling
+* ✅ Well-documented deployment patterns
+
+Scaling::
+* ✅ Billions of triples supported
+* ✅ Clustering available (commercial edition)
+* ⚠️  Vertical scaling easier than horizontal
+
+== Use Case Suitability Matrix
+
+.When to Use PuppyGraph
+[%header,cols="2,3"]
+|===
+| Use Case | Assessment
+
+| Querying existing relational data as graphs
+| ✅ **Ideal** - this is PuppyGraph's core strength
+
+| Lakehouse/data warehouse graph analytics
+| ✅ **Ideal** - zero-ETL, columnar optimization
+
+| Real-time graph traversals on operational databases
+| ✅ **Good** - if data already in PostgreSQL/MySQL
+
+| Property graph applications (social networks)
+| ✅ **Good** - Gremlin/Cypher well-suited
+
+| RDF knowledge graphs
+| ❌ **Poor** - fundamental model mismatch
+
+| Semantic web / linked data
+| ❌ **Poor** - no RDF/SPARQL support
+
+| Inference-heavy applications
+| ❌ **Poor** - no reasoning engine
+|===
+
+.When to Use Virtuoso
+[%header,cols="2,3"]
+|===
+| Use Case | Assessment
+
+| RDF knowledge graphs
+| ✅ **Ideal** - native RDF quad store
+
+| SPARQL query workloads
+| ✅ **Ideal** - optimized SPARQL engine
+
+| Semantic web / linked data
+| ✅ **Ideal** - W3C standards compliance
+
+| Ontology-based reasoning
+| ✅ **Ideal** - RDFS/OWL support
+
+| Federated queries across knowledge graphs
+| ✅ **Ideal** - SPARQL SERVICE clause
+
+| Property graph traversals
+| ⚠️  **Fair** - possible but not optimized
+
+| Querying existing relational data
+| ⚠️  **Fair** - requires ETL to RDF
+|===
+
+== Recommendation
+
+=== For Anamnesis: Use Virtuoso + SPARQL
+
+.Rationale
+
+**Fundamental Architecture Alignment**
+
+1. **RDF is the Right Model**
+   - Anamnesis requires global identifiers (URIs) for cross-conversation linking
+   - Named graphs (RDF quads) naturally model episodic memory
+   - RDF reification/RDF-star perfect for artifact lifecycle metadata
+   - Multi-category membership trivial with RDF (just add more triples)
+
+2. **PuppyGraph is the Wrong Tool**
+   - PuppyGraph solves a **different problem**: querying existing relational/columnar data as graphs
+   - Anamnesis is **creating new graph data** from unstructured LLM conversations
+   - Zero-ETL value proposition does not apply
+   - Property graph model requires complex workarounds for RDF semantics
+
+3. **Tech Stack Integration**
+   - ✅ OCaml: Mature OCaml-RDF library with full SPARQL support
+   - ✅ Elixir: Excellent SPARQL client libraries
+   - ✅ Julia: Easy HTTP-based SPARQL queries
+   - ✅ λProlog: Can reason over SPARQL query results or RDF triples directly
+
+4. **Reasoning Requirements**
+   - Anamnesis needs fuzzy categorization → RDFS/OWL inference
+   - λProlog meta-reasoning complements Virtuoso's inference
+   - Property graphs have no standard reasoning semantics
+
+5. **Operational Simplicity**
+   - Virtuoso: Single component (database + query engine)
+   - PuppyGraph: Dual components (backend store + query engine) → unnecessary complexity
+
+.Architectural Decision
+[source,text]
+----
+┌──────────────────────────────────────────┐
+│ Milestone 1 Goal:                        │
+│ Parse single Claude conversation JSON    │
+│           ↓                              │
+│ Generate RDF triples                     │
+│           ↓                              │
+│ Store in Virtuoso                        │
+│           ↓                              │
+│ Query via SPARQL                         │
+└──────────────────────────────────────────┘
+
+Technology Stack (Confirmed):
+- OCaml: Parsing + RDF triple generation
+- Virtuoso: RDF storage + SPARQL queries
+- Elixir: Orchestration + SPARQL client
+- Julia: Analytics on SPARQL query results
+- λProlog: Meta-reasoning over RDF graph
+----
+
+=== When to Revisit PuppyGraph
+
+Consider PuppyGraph in the future **only if**:
+
+1. Anamnesis pivots to storing conversation data in a lakehouse (Iceberg/Hudi)
+2. Property graph model becomes preferred over RDF
+3. Real-time multi-hop traversals become primary bottleneck
+4. RDF inference requirements are dropped
+
+Otherwise, **stick with Virtuoso**.
+
+== Alternative Considerations
+
+If Virtuoso proves inadequate, consider these RDF-native alternatives:
+
+.RDF Triplestore Alternatives
+[%header,cols="2,3,2"]
+|===
+| Alternative | Strengths | When to Use
+
+| **GraphDB** (Ontotext)
+| Excellent inference, enterprise features, full-text search
+| If Virtuoso performance insufficient
+
+| **Amazon Neptune**
+| Managed service, supports RDF + property graphs, SPARQL + Gremlin
+| If cloud-native deployment preferred
+
+| **Apache Jena + Fuseki**
+| Open source, Java ecosystem, TDB2 storage
+| If JVM integration preferred
+
+| **Blazegraph**
+| High-performance, GPU acceleration option
+| If extreme query performance needed
+
+| **Stardog**
+| Knowledge graph platform, virtual graphs, inference
+| If enterprise features + inference critical
+|===
+
+**Do not** consider these property graph databases as alternatives:
+
+* Neo4j (property graph, no RDF)
+* TigerGraph (property graph, no RDF)
+* ArangoDB (multi-model but weak RDF support)
+
+== Conclusion
+
+PuppyGraph is an innovative and powerful **graph query engine** for organizations with existing data in lakehouses or warehouses who want to add graph analytics without ETL. However, it is **fundamentally misaligned** with Anamnesis requirements:
+
+[discrete]
+=== ❌ PuppyGraph Mismatches
+* Property graph model (not RDF)
+* No SPARQL support
+* No semantic reasoning
+* No global URI identifiers
+* Zero-ETL value doesn't apply (we're creating new data)
+
+[discrete]
+=== ✅ Virtuoso Advantages
+* Native RDF quad store
+* Full SPARQL 1.1 compliance
+* RDFS/OWL reasoning
+* Excellent tech stack integration (OCaml, Elixir, Julia)
+* Simpler operational model (single component)
+* Perfect alignment with episodic memory + artifact lifecycle requirements
+
+**Recommendation: Proceed with Virtuoso + SPARQL as originally planned.**
+
+The planned architecture (OCaml parsing → RDF triples → Virtuoso → SPARQL queries → λProlog reasoning → Julia analytics) is sound and well-suited for the Anamnesis problem space.
+
+== References
+
+1. PuppyGraph Official Website: https://www.puppygraph.com
+2. PuppyGraph Documentation: https://docs.puppygraph.com
+3. Virtuoso RDF Triple Store: https://virtuoso.openlinksw.com/
+4. RDF vs Property Graphs (Neo4j): https://neo4j.com/blog/knowledge-graph/rdf-vs-property-graphs-knowledge-graphs/
+5. OCaml-RDF Library: https://www.good-eris.net/ocaml-rdf/
+6. Gremlex (Elixir): https://hex.pm/packages/gremlex
+7. Neo4jBolt.jl (Julia): https://github.com/virtualgraham/Neo4jBolt.jl
+8. SPARQL 1.1 Specification: https://www.w3.org/TR/sparql11-query/
+
+---
+
+**Document Status**: Research Complete +
+**Next Action**: Review with project stakeholder, proceed with Virtuoso setup +
+**Research Date**: 2025-11-22 +
+**Analyst**: Claude Code

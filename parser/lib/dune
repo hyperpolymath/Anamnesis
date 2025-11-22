@@ -1,0 +1,17 @@
+(library
+ (name anamnesis_parser)
+ (public_name anamnesis_parser)
+ (libraries angstrom atdgen-runtime yojson ptime re)
+ (preprocess (pps)))
+
+; Generate OCaml types from ATD
+(rule
+ (targets conversation_types_t.ml conversation_types_t.mli)
+ (deps conversation_types.atd)
+ (action (run atdgen -t %{deps})))
+
+; Generate JSON serializers from ATD
+(rule
+ (targets conversation_types_j.ml conversation_types_j.mli)
+ (deps conversation_types.atd)
+ (action (run atdgen -j %{deps})))

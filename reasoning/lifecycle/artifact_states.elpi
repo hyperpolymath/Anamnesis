@@ -1,0 +1,92 @@
+% Anamnesis Artifact Lifecycle Reasoning
+% Track artifact state transitions over time
+
+% Type declarations
+kind artifact_id type.
+kind state type.
+kind timestamp type.
+kind event type.
+
+% States
+type created, modified, removed, evaluated state.
+
+% Event: state transition at a specific time
+type event state -> artifact_id -> timestamp -> event.
+
+% Predicates
+type has_lifecycle artifact_id -> list event -> prop.
+type valid_transition state -> state -> prop.
+type current_state artifact_id -> timestamp -> state -> prop.
+type state_at_time artifact_id -> timestamp -> state -> prop.
+type validate_lifecycle artifact_id -> prop.
+type check_transitions list event -> prop.
+type latest_event_before timestamp -> list event -> event -> prop.
+type events_sorted_by_time list event -> list event -> prop.
+
+% Valid state transitions
+valid_transition created modified.
+valid_transition created removed.
+valid_transition modified modified.   % Can be modified multiple times
+valid_transition modified evaluated.
+valid_transition modified removed.
+valid_transition evaluated removed.
+valid_transition evaluated modified.  % Can modify after evaluation
+
+% Get current state of artifact at time T
+% Find the latest event before or at time T
+current_state ArtID T State :-
+    has_lifecycle ArtID Events,
+    latest_event_before T Events (event State ArtID _).
+
+% Find latest event before time T
+latest_event_before T [event S A TS] (event S A TS) :-
+    TS =< T.
+
+latest_event_before T [event S A TS | Rest] Latest :-
+    TS =< T,
+    latest_event_before T Rest (event S2 A2 TS2),
+    (TS >= TS2, Latest = event S A TS ; Latest = event S2 A2 TS2).
+
+latest_event_before T [event _ _ TS | Rest] Latest :-
+    TS > T,
+    latest_event_before T Rest Latest.
+
+% Validate lifecycle: check all transitions are valid
+validate_lifecycle ArtID :-
+    has_lifecycle ArtID Events,
+    events_sorted_by_time Events SortedEvents,
+    check_transitions SortedEvents.
+
+% Check each pair of consecutive events is a valid transition
+check_transitions [].
+check_transitions [_].
+check_transitions [event S1 _ _, event S2 _ _ | Rest] :-
+    valid_transition S1 S2,
+    check_transitions [event S2 _ _ | Rest].
+
+% Sort events by timestamp (simplified - assumes already sorted)
+events_sorted_by_time Events Events.
+
+% Example lifecycle data (would come from RDF in real usage)
+has_lifecycle "artifact-123" [
+    event created "artifact-123" 1000,
+    event modified "artifact-123" 2000,
+    event modified "artifact-123" 3000,
+    event evaluated "artifact-123" 4000
+].
+
+has_lifecycle "artifact-456" [
+    event created "artifact-456" 1500,
+    event modified "artifact-456" 2500,
+    event removed "artifact-456" 3500
+].
+
+% Query examples:
+% ?- current_state "artifact-123" 2500 State.
+% State = modified
+
+% ?- validate_lifecycle "artifact-123".
+% Yes
+
+% ?- valid_transition created removed.
+% Yes

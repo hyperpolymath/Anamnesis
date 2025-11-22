@@ -1,0 +1,342 @@
+# Anamnesis
+
+**A conversation knowledge extraction and reconciliation system for multi-LLM development workflows.**
+
+## Problem
+
+Modern AI-assisted development creates chaos:
+
+- **Mixed-project conversations** - Multiple projects discussed in single threads
+- **Dead-end tangents** - Valuable ideas lost in conversation noise
+- **Lost context** - Decisions and rationale buried across chat histories
+- **Artifact fragmentation** - Code/docs created, modified, abandoned across sessions
+- **Multi-LLM mayhem** - Switching between Claude, ChatGPT, Mistral with no unified view
+
+## Solution
+
+Anamnesis parses tangled multi-LLM discussion threads, tracks artifact lifecycles (created→modified→removed→evaluated), cross-links related fragments across conversations, and generates clean summaries with content properly bucketed by project/topic.
+
+## Architecture
+
+Multi-language functional system leveraging each language's strengths:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Data Sources: Claude, ChatGPT, Mistral, Git, Browser History  │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Parser (OCaml): Angstrom combinators, type-safe format parsing│
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Orchestrator (Elixir): OTP supervision, port pools, HTTP API  │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+            ┌────────────┴────────────┐
+            │                         │
+            ▼                         ▼
+┌───────────────────────┐  ┌──────────────────────────────────────┐
+│ Reasoning (λProlog)   │  │ Analytics (Julia)                    │
+│ - Artifact lifecycle  │  │ - RDF generation (Serd.jl)          │
+│ - Contamination       │  │ - SPARQL queries (HTTP.jl)          │
+│ - Fuzzy categorization│  │ - Reservoir computing (ESN)         │
+│ - Meta-reasoning      │  │ - KBANN (knowledge-augmented nets)  │
+└───────────┬───────────┘  └──────────┬───────────────────────────┘
+            │                         │
+            └────────────┬────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Storage (Virtuoso): RDF triplestore, SPARQL 1.1, named graphs │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Visualization (ReScript): Reagraph graphs, timeline charts,   │
+│  fuzzy category viz, type-safe functional React components     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Technology Stack
+
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| **Parsing** | OCaml (Angstrom, Atdgen) | Type safety, parser combinators, ELPI integration |
+| **Orchestration** | Elixir/OTP | Fault tolerance, concurrency, supervision trees |
+| **Reasoning** | λProlog (ELPI) | Higher-order abstract syntax, meta-reasoning |
+| **Analytics** | Julia | Scientific computing without Python, RDF, reservoir computing |
+| **Storage** | Virtuoso + SPARQL | RDF native, named graphs, inference |
+| **Visualization** | ReScript + React | Type safety, functional paradigm, eventual JS replacement |
+
+### Critical Constraints
+
+- ❌ **NO PYTHON** - Use Julia for all scientific computing
+- ✅ **Type safety** throughout (OCaml, ReScript, Elixir typespecs)
+- ✅ **Functional paradigm** - Immutability, pure functions, declarative
+- ✅ **Multi-LLM** from start (stub complexity initially)
+- ✅ **Academic rigor** - Research-grade documentation
+
+## Project Structure
+
+```
+.
+├── CLAUDE.md                    # Claude Code guidance
+├── README.md                    # This file
+├── parser/                      # OCaml parsing components
+│   ├── lib/parsers/            # Format-specific parsers
+│   ├── bin/                    # Port executable
+│   └── README.md
+├── orchestrator/               # Elixir orchestration layer
+│   ├── lib/anamnesis/         # Core logic
+│   ├── lib/anamnesis_web/     # Phoenix HTTP API
+│   └── README.md
+├── reasoning/                  # λProlog meta-reasoning
+│   ├── lifecycle/             # Artifact state machines
+│   ├── categorization/        # Fuzzy membership, contamination
+│   ├── linking/               # Cross-conversation references
+│   ├── episodic/              # Memory queries
+│   └── README.md
+├── learning/                   # Julia analytics
+│   ├── src/rdf/               # RDF manipulation
+│   ├── src/reservoir/         # Reservoir computing, KBANN
+│   ├── src/graphs/            # Graph processing
+│   └── README.md
+├── visualization/              # ReScript UI
+│   ├── src/components/        # React components
+│   ├── src/bindings/          # JS library bindings
+│   ├── src/types/             # Domain types
+│   └── README.md
+├── proving-ground/             # Test workspace
+│   └── (zotero-voyant-export copy)
+└── docs/
+    ├── architecture/          # System architecture
+    ├── research/              # Tech stack research
+    ├── guides/                # Integration guides
+    └── specifications/        # RDF schemas, protocols
+```
+
+## Getting Started
+
+### Prerequisites
+
+- **OCaml** 5.0+ (via OPAM)
+- **Elixir** 1.15+ (via asdf or package manager)
+- **Julia** 1.10+ (via juliaup)
+- **Node.js** 18+ (for ReScript)
+- **Virtuoso** 7+ (via Docker or native)
+
+### Quick Start
+
+```bash
+# 1. Install language runtimes (see component READMEs)
+
+# 2. Build parser (OCaml)
+cd parser
+opam install --deps-only .
+dune build
+
+# 3. Build orchestrator (Elixir)
+cd ../orchestrator
+mix deps.get
+mix compile
+
+# 4. Build reasoning (λProlog via OCaml/ELPI)
+cd ../reasoning
+dune build
+
+# 5. Setup analytics (Julia)
+cd ../learning
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+# 6. Build visualization (ReScript)
+cd ../visualization
+npm install
+npm run res:build
+
+# 7. Start Virtuoso (Docker)
+docker run -d -p 8890:8890 -p 1111:1111 \
+  -e DBA_PASSWORD=anamnesis \
+  --name virtuoso \
+  openlink/virtuoso-opensource-7
+
+# 8. Run Anamnesis
+cd ../orchestrator
+mix phx.server
+# Visit http://localhost:4000
+```
+
+## Current Status
+
+**Phase: Planning → Initial Implementation**
+
+### Completed ✅
+
+- [x] Project architecture designed
+- [x] Comprehensive tech stack research (6 detailed reports)
+- [x] Directory structure created
+- [x] Component READMEs written
+- [x] CLAUDE.md guidance created
+
+### In Progress 🚧
+
+- [ ] OCaml parser starter code
+- [ ] Elixir supervision tree
+- [ ] λProlog reasoning modules
+- [ ] Julia RDF manipulation
+- [ ] ReScript component scaffolding
+
+### Phase 1 Roadmap 📋
+
+1. ✅ Create Anamnesis repository
+2. ✅ Research tech options (Julia RDF, reservoir computing, ReScript viz, OCaml parsers, λProlog)
+3. ⬜ Copy proving ground (zotero-voyant-export)
+4. ⬜ Setup basic infrastructure (build systems, test frameworks)
+5. ⬜ **Milestone 1**: Parse single Claude conversation JSON → Virtuoso RDF triples
+
+### Phase 2: Milestone 1 🎯
+
+**Goal**: End-to-end pipeline for one conversation format
+
+- [ ] Claude JSON format parser (OCaml)
+- [ ] Port communication (OCaml ↔ Elixir)
+- [ ] Basic RDF generation (Julia)
+- [ ] Virtuoso storage
+- [ ] Simple graph visualization (ReScript)
+
+## Key Design Concepts
+
+### Multi-Category Membership
+
+Conversations don't belong to just one project. Anamnesis supports fuzzy boundaries:
+
+```turtle
+anamnesis:conv:123 anamnesis:belongsTo anamnesis:proj:anamnesis ;
+                   anamnesis:membershipStrength 0.8 .
+
+anamnesis:conv:123 anamnesis:belongsTo anamnesis:proj:rescript-evangeliser ;
+                   anamnesis:membershipStrength 0.3 .
+```
+
+Visualized via color mixing: 80% green (Anamnesis) + 30% orange (ReScript) = blended color.
+
+### Artifact Lifecycle Tracking
+
+Track state transitions over time:
+
+```prolog
+% λProlog rules
+valid_transition created modified.
+valid_transition modified evaluated.
+valid_transition modified removed.
+
+current_state artifact_123 timestamp_456 State.
+% State = modified
+```
+
+### Cross-Conversation Linking
+
+Fragment references span conversations:
+
+```sparql
+# SPARQL query
+SELECT ?conv1 ?conv2 ?artifact
+WHERE {
+  GRAPH ?g1 { ?conv1 anamnesis:discusses ?artifact . }
+  GRAPH ?g2 { ?conv2 anamnesis:discusses ?artifact . }
+  FILTER(?conv1 != ?conv2)
+}
+```
+
+### Episodic Memory
+
+Named graphs partition conversations by episode:
+
+```
+graph:conversation:uuid-1  # Conversation metadata
+graph:artifacts:uuid-1     # Artifact lifecycles
+graph:links:uuid-1         # Cross-references
+graph:categories:uuid-1    # Project membership
+```
+
+## Documentation
+
+- **Architecture**: `/docs/architecture/system-architecture.adoc` - Complete system design
+- **Research**: `/docs/research/` - Tech stack evaluations:
+  - `julia-rdf-ecosystem.adoc` - RDF libraries (Serd.jl recommended)
+  - `julia-reservoir-computing.adoc` - ESN, KBANN (ReservoirComputing.jl)
+  - `puppygraph-evaluation.adoc` - Property graphs vs RDF (stick with Virtuoso)
+  - `rescript-visualization.adoc` - Reagraph, rescript-recharts
+  - `ocaml-parsing-elixir-bridge.adoc` - Angstrom, ports vs NIFs
+  - `lambda-prolog-meta-reasoning.adoc` - ELPI, HOAS, integration
+- **Component READMEs**: Each directory has detailed setup/usage docs
+- **CLAUDE.md**: Guidance for Claude Code when working on this project
+
+## Testing
+
+### Proving Ground
+
+The `zotero-voyant-export` repository is our test case - it's contaminated with Anamnesis planning discussions mixed into Zotero export tool development. This IS the problem we're solving.
+
+**Strategy**:
+1. Copy entire repo to `proving-ground/`
+2. Preserve original
+3. Run Anamnesis pipeline
+4. Verify correct untangling
+5. Store iterations for comparison
+
+### Test Coverage Targets
+
+- Parser: 90%+ (property-based testing with qcheck)
+- Orchestrator: 85%+ (ExUnit + StreamData)
+- Analytics: 80%+ (Test.jl)
+- Visualization: 75%+ (Jest + React Testing Library)
+- Reasoning: Example-driven (λProlog test harness)
+
+## Performance Targets
+
+| Component | Target | Strategy |
+|-----------|--------|----------|
+| Parser throughput | 100 conversations/sec | Parallel ports, incremental parsing |
+| λProlog queries | <100ms | ETS caching, tabled predicates |
+| SPARQL queries | <50ms simple, <500ms complex | Virtuoso indexing |
+| Graph viz | 1000-5000 nodes interactive | WebGL (Reagraph), LOD |
+| RDF storage | 10M+ triples | Named graph partitioning |
+
+## Related Projects
+
+- **ReScript Evangeliser** - Learning curve synergies
+- **Zotero:NSAI** - Neurosymbolic AI integration
+- **Fogbinder** - Uncertainty-as-feature framework
+
+## Contributing
+
+This is a personal research project, but architecture decisions are documented for transparency. See component READMEs for development guidelines.
+
+## Academic Context
+
+Relevant to user's research/journalism work:
+
+- **Agnotology** - Study of culturally-induced ignorance
+- **Axiology** - Theory of value
+- **Ethics** - Moral philosophy applications
+- **Knowledge representation** - Formal semantics, RDF, logic programming
+
+## License
+
+To be determined.
+
+## Resources
+
+- Repository: https://github.com/Hyperpolymath/convesation-spaghetti
+- Test Case: zotero-voyant-export (to be copied to proving-ground)
+- Handover Docs: `zotero-voyant-export/docs/contamination-notice/`
+  - ANAMNESIS_HANDOVER_MINIMAL.adoc
+  - THREAD_CONTAMINATION_WARNING.adoc
+
+---
+
+**Status**: Planning phase, comprehensive research complete, initial implementation starting.
+
+**Next Immediate Steps**: Implement Milestone 1 (Claude JSON → Virtuoso RDF pipeline).

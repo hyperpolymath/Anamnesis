@@ -1,0 +1,25 @@
+{
+  "name": "anamnesis-visualization",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "res:build": "rescript",
+    "res:clean": "rescript clean",
+    "res:dev": "rescript build -w",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@rescript/core": "^1.0.0",
+    "@rescript/react": "^0.12.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "reagraph": "^4.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "rescript": "^11.0.0",
+    "vite": "^5.0.0"
+  }
+}

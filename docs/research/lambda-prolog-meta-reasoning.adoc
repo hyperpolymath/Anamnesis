@@ -1,0 +1,1713 @@
+= λProlog/Teyjus for Meta-Reasoning in Anamnesis
+:author: Research for Anamnesis Project
+:date: 2025-11-22
+:toc: left
+:toclevels: 3
+:sectanchors:
+:sectlinks:
+:sectnums:
+:source-highlighter: rouge
+
+== Executive Summary
+
+This document provides comprehensive research on **λProlog** (lambda-Prolog) and its **Teyjus** implementation for use in the Anamnesis conversation knowledge extraction system. λProlog is a higher-order logic programming language particularly well-suited for meta-reasoning about conversations, artifacts, and complex structural relationships.
+
+**Key Findings:**
+
+* λProlog provides native support for Higher-Order Abstract Syntax (HOAS), making it ideal for representing and reasoning about complex syntactic structures like conversation threads and artifact lifecycles
+* Teyjus is a mature, actively maintained implementation (latest release: February 2023)
+* ELPI (Embeddable λProlog Interpreter) offers an OCaml-embeddable alternative with active development (v2.0.6, December 2024)
+* Integration with Elixir is feasible via Ports (recommended for fault tolerance) or NIFs (for performance)
+* λProlog excels at meta-programming, theorem proving, and structural reasoning - ideal for Anamnesis use cases
+
+**Recommendation:** Use **ELPI** for the Anamnesis reasoning layer due to:
+
+1. Active development (2024 releases)
+2. OCaml implementation (matches our parser stack)
+3. Embeddable design (easier integration)
+4. Native HOAS support for conversation/artifact reasoning
+5. Constraint Handling Rules (CHR) for complex rule management
+
+== What is λProlog?
+
+=== Overview
+
+λProlog (lambda-Prolog) is a logic programming language featuring:
+
+* **Polymorphic typing** - Type safety with type inference
+* **Modular programming** - Module system for code organization
+* **Higher-order programming** - Functions and predicates as first-class values
+* **Higher-Order Hereditary Harrop (HOHH) formulas** - More expressive than Horn clauses used in standard Prolog
+
+λProlog was developed by Dale Miller and Gopalan Nadathur in the late 1980s. The first distributed version was written in Prolog in 1988. Despite its age, the language continues to see new implementations and applications, particularly in meta-programming, program analysis, and theorem proving.
+
+=== Historical Context
+
+* **1988**: First λProlog implementation distributed
+* **Late 1980s-1990s**: Language design and theoretical foundations established
+* **2012**: "Programming with Higher-Order Logic" textbook published by Cambridge University Press
+* **2015**: ELPI (Embeddable λProlog Interpreter) paper published at LPAR
+* **2023**: Teyjus 2.1.1 released (February)
+* **2024**: ELPI 2.0.6 released (December) - actively maintained
+
+=== Why Meta-Reasoning?
+
+The main strength of λProlog is its support for **lambda tree syntax** - a powerful way to view the structure of complex syntactic objects such as:
+
+* Types
+* Formulas
+* Proofs
+* Programs
+* **Conversations** (Anamnesis use case)
+* **Artifacts and their relationships** (Anamnesis use case)
+
+λProlog's logical foundation provides:
+
+* **Abstract datatypes** - Clean representation of domain concepts
+* **Higher-order programming** - Reasoning about predicates and functions
+* **Lambda-tree syntax** - Natural representation of binding structures
+* **Meta-level reasoning** - Reasoning about reasoning itself
+
+== Higher-Order Abstract Syntax (HOAS)
+
+=== What is HOAS?
+
+Higher-Order Abstract Syntax (HOAS) is a technique for representing abstract syntax trees for languages with variable binders. λProlog was the **world's first programming language** to directly support HOAS.
+
+HOAS exposes additional structure: the relationship between variables and their binding sites. This is crucial for reasoning about:
+
+* Scope and binding in program analysis
+* Variable substitution in transformation systems
+* **Context and reference in conversations** (Anamnesis)
+* **Artifact dependencies and lifecycles** (Anamnesis)
+
+=== Key Advantages of HOAS
+
+[cols="1,2"]
+|===
+|Advantage |Impact on Anamnesis
+
+|**No manual variable handling**
+|Don't need De Bruijn indices or variable renaming when tracking conversation references
+
+|**Built-in substitution**
+|Natural representation of artifact modifications and transformations
+
+|**Scoping mechanism**
+|Model conversation context and thread boundaries naturally
+
+|**Meta-level binding**
+|Reason about how artifacts reference each other across conversations
+
+|**Alpha-equivalence**
+|Automatically handle equivalent representations of the same concept
+|===
+
+=== HOAS in Practice
+
+The underlying idea of HOAS is to use a meta-language that provides a **built-in and logical treatment** of binding-related notions. By embedding the object language within the meta-language, we can:
+
+1. Absorb the treatment of binding structure into the meta-theory
+2. Greatly simplify implementation
+3. Simplify reasoning processes
+4. Ensure correctness by construction
+
+**Abella** is a companion system that allows proving properties about λProlog programs, providing formal verification capabilities.
+
+== λProlog vs Standard Prolog vs Datalog
+
+=== Comparison Matrix
+
+[cols="1,2,2,2"]
+|===
+|Feature |Datalog |Prolog |λProlog
+
+|**Expressiveness**
+|Least expressive
+|Turing-complete
+|Most expressive
+
+|**Termination**
+|Always terminates
+|May not terminate
+|May not terminate
+
+|**Type System**
+|None
+|None (or weak)
+|Polymorphic, static typing
+
+|**Higher-Order**
+|No
+|Limited (meta-predicates)
+|Native support
+
+|**Unification**
+|First-order
+|First-order
+|Higher-order pattern unification
+
+|**Use Cases**
+|Database queries
+|General logic programming
+|Meta-programming, theorem proving
+
+|**Function Symbols**
+|No function symbols
+|Full support
+|Lambda terms as data
+
+|**Modularity**
+|Limited
+|Module systems vary
+|Native module support
+
+|**Declarative**
+|Fully declarative
+|Procedural elements (cut)
+|More declarative than Prolog
+|===
+
+=== Key Differences from Prolog
+
+λProlog differs from standard Prolog in **three major ways**:
+
+1. **Static typechecking** with partially implicit declarations
+2. **Linguistic support for abstractions**, including unification of abstractions
+3. **Local declarations** via the "implies" operator (`=>`) and explicit quantification operators (`pi`, `sigma`)
+
+==== Implications and Universal Quantifiers
+
+Allowing **implications** and **universal quantifiers** in queries and the body of clauses is the essential logical difference between λProlog and Prolog. This enables:
+
+* **Hypothetical reasoning** - "If X were true, what would follow?"
+* **Generic proofs** - "For all X, prove property P"
+* **Context management** - Track assumptions and discharge them appropriately
+
+These features are crucial for conversation reasoning in Anamnesis:
+
+* "If we consider only conversations about project X..."
+* "For all artifacts created in conversation thread Y..."
+* "Given the context of earlier conversations..."
+
+=== Comparison to Datalog
+
+Datalog is a **restricted subset** of Prolog with key constraints:
+
+* **No function symbols** - Only constants and variables
+* **Guaranteed termination** - Every Datalog program terminates
+* **Purely declarative** - No cut operator, statement order doesn't matter
+* **Recursive SQL equivalent** - Designed for querying relational databases
+
+**Trade-off:** Datalog's termination guarantee comes at the cost of expressiveness. For Anamnesis, we need the full power of λProlog to reason about complex artifact lifecycles and cross-conversation relationships.
+
+=== Why λProlog for Anamnesis?
+
+[cols="1,3"]
+|===
+|Requirement |How λProlog Addresses It
+
+|**Multi-category membership**
+|Higher-order predicates can represent overlapping categories naturally
+
+|**Episodic memory**
+|HOAS models temporal context and reference scoping
+
+|**Fuzzy boundaries**
+|Hypothetical reasoning allows "what-if" category exploration
+
+|**Artifact lifecycle tracking**
+|State transitions modeled with temporal logic predicates
+
+|**Cross-conversation linking**
+|Higher-order unification finds related fragments across contexts
+
+|**Meta-reasoning**
+|Native support for reasoning about reasoning (conversation about conversations)
+|===
+
+== Teyjus Implementation
+
+=== Overview
+
+**Teyjus** is an efficient implementation of λProlog developed by Gopalan Nadathur and his team at the University of Minnesota.
+
+* **Current Version**: 2.1.1 (released February 8, 2023)
+* **Platform Support**: Linux (32/64-bit), macOS, Windows (via WSL recommended)
+* **License**: Open source
+* **Repository**: https://github.com/teyjus/teyjus
+* **Official Site**: https://teyjus.cs.umn.edu/
+
+=== Installation
+
+==== Prerequisites
+
+* **gcc** and **gcc-c++** (C/C++ compilers)
+* **flex** (lexical analyzer generator)
+* **bison** (parser generator)
+* **omake** (build system)
+
+These are standard on most Linux distributions and available via Homebrew on macOS.
+
+==== Build Process
+
+[source,bash]
+----
+# Clone repository
+git clone https://github.com/teyjus/teyjus.git
+cd teyjus
+
+# Build all components
+omake all
+
+# Install (copy executables to desired location)
+sudo cp tj* /usr/local/bin/
+----
+
+==== Verification
+
+[source,bash]
+----
+# Check installation
+tjcc --version
+tjsim --version
+----
+
+=== Teyjus Toolchain
+
+Teyjus provides several tools for development:
+
+[cols="1,3"]
+|===
+|Tool |Purpose
+
+|**tjcc**
+|Compiler - compiles λProlog source files (`.mod`, `.sig`)
+
+|**tjsim**
+|Simulator - runs compiled λProlog programs (batch mode with `-b`)
+
+|**tjlink**
+|Linker - links compiled modules
+
+|**tjdepend**
+|Dependency analyzer - generates module dependency information
+
+|**tjdis**
+|Disassembler - displays bytecode for debugging
+|===
+
+=== Performance Characteristics
+
+Teyjus compiles λProlog to bytecode for efficient execution. Key performance notes:
+
+* **Compilation**: One-time cost, produces bytecode files
+* **Execution**: Bytecode interpretation is reasonably fast for logic programming
+* **Pattern unification**: Optimized for higher-order pattern unification (common case)
+* **Memory**: Garbage collection for term storage
+
+**Note**: For Anamnesis, reasoning is typically **batch-oriented** (process conversation dumps), not real-time, so Teyjus performance is adequate.
+
+=== Usage Example
+
+==== Source Files
+
+λProlog programs consist of two file types:
+
+* **`.sig` files** - Signatures (type declarations, module interface)
+* **`.mod` files** - Modules (implementation, clauses)
+
+Example structure:
+
+[source,prolog]
+----
+% artifact.sig - Type signatures
+sig artifact.
+
+kind artifact  type.
+kind state     type.
+
+type created, modified, removed, evaluated  state.
+type artifact_state  artifact -> state -> o.
+type transition      artifact -> state -> state -> o.
+----
+
+[source,prolog]
+----
+% artifact.mod - Implementation
+module artifact.
+
+% Lifecycle transitions
+transition A created modified.
+transition A modified modified.    % Can be modified multiple times
+transition A modified removed.
+transition A created removed.       % Can be removed without modification
+transition A modified evaluated.
+transition A removed evaluated.
+
+% Current state tracking
+artifact_state A S :-
+    % Implementation depends on temporal logic
+    current_time T,
+    state_at_time A T S.
+----
+
+==== Compilation and Execution
+
+[source,bash]
+----
+# Compile module
+tjcc artifact
+
+# Run queries (batch mode)
+echo "transition A created modified." | tjsim -b artifact
+----
+
+== ELPI: Embeddable λProlog Interpreter
+
+=== Overview
+
+**ELPI** (Embeddable Lambda Prolog Interpreter) is a modern alternative to Teyjus, designed specifically for embedding into larger OCaml applications.
+
+* **Current Version**: 2.0.6 (released December 13, 2024)
+* **Implementation Language**: OCaml
+* **License**: LGPL v2.1 or later
+* **Platform Support**: Linux, macOS, Windows
+* **Repository**: https://github.com/LPCIC/elpi
+* **OCaml Package**: https://opam.ocaml.org/packages/elpi/
+
+=== Key Advantages for Anamnesis
+
+[cols="1,3"]
+|===
+|Advantage |Benefit
+
+|**OCaml-native**
+|Integrates seamlessly with Anamnesis OCaml parser components
+
+|**Embeddable design**
+|Designed as an extension language, not standalone system
+
+|**Active development**
+|2024 releases, ongoing maintenance, modern tooling
+
+|**FFI support**
+|Foreign Function Interface for defining built-in predicates
+
+|**API-driven**
+|Clean OCaml API for driving the interpreter
+
+|**Quotations**
+|Syntax sugar for embedding object language in λProlog
+
+|**CHR support**
+|Constraint Handling Rules for syntactic constraints
+|===
+
+=== Installation (OCaml/OPAM)
+
+[source,bash]
+----
+# Using OPAM (OCaml package manager)
+opam install elpi
+
+# Using Findlib in OCaml projects
+ocamlfind opt -package elpi -linkpkg mycode.ml -o myprogram
+----
+
+=== Constraint Handling Rules (CHR)
+
+ELPI provides **native support for syntactic constraints** and their meta-level handling rules. This is powerful for Anamnesis:
+
+**Example Use Case:** Tracking artifact dependencies
+
+[source,prolog]
+----
+% Constraint: artifact A depends on artifact B
+constraint depends_on artifact artifact.
+
+% CHR: Transitive dependency detection
+rule (depends_on A B, depends_on B C)
+  <=> (depends_on A C).
+
+% CHR: Circular dependency detection
+rule (depends_on A B, depends_on B A)
+  <=> fail.  % Circular dependencies are invalid
+----
+
+=== Coq Integration
+
+ELPI powers **Coq-ELPI**, a Coq plugin that allows executing λProlog programs in the Coq proof assistant environment. While not directly relevant to Anamnesis, this demonstrates ELPI's maturity and formal verification capabilities.
+
+=== ELPI vs Teyjus
+
+[cols="1,2,2"]
+|===
+|Aspect |Teyjus |ELPI
+
+|**Primary Use**
+|Standalone λProlog system
+|Embeddable extension language
+
+|**Implementation**
+|C/C++
+|OCaml
+
+|**Compilation**
+|Bytecode compiler
+|Interpreter
+
+|**Development Status**
+|Maintained (2023)
+|Active (2024)
+
+|**Integration**
+|External process
+|Library linkage
+
+|**Performance**
+|Compiled bytecode
+|Interpreted
+
+|**FFI**
+|Limited
+|Rich OCaml FFI
+
+|**Best For**
+|Research, standalone use
+|Embedding in OCaml apps
+|===
+
+**Recommendation for Anamnesis**: Use **ELPI** due to OCaml integration and active development.
+
+== Higher-Order Logic Programming Patterns
+
+=== Core Concepts
+
+Higher-order logic programming in λProlog leverages several powerful concepts:
+
+==== 1. Higher-Order Unification
+
+λProlog uses **higher-order pattern unification** - a restricted but decidable form of higher-order unification. This allows unifying lambda terms:
+
+[source,prolog]
+----
+% Pattern unification example
+% Variable F can be instantiated with a lambda term
+
+?- F X = (x\ x + 1).
+% F = (x\ x + 1)
+
+?- apply (x\ x * 2) 5 N.
+% N = 10
+----
+
+==== 2. Lambda Terms as Data
+
+Lambda terms serve as **data representation devices**:
+
+[source,prolog]
+----
+% Representing a conversation turn
+type turn   speaker -> utterance -> turn.
+type speaker  string.
+type utterance  (string -> prop).  % Parameterized by context
+
+% Conversation with context binding
+turn "Alice" (ctx\ assert ctx "The project needs refactoring").
+turn "Bob" (ctx\ question ctx "Which module?").
+turn "Alice" (ctx\ refer ctx previous "The parser module").
+----
+
+==== 3. Hypothetical Reasoning
+
+The `=>` operator allows **hypothetical reasoning** - temporarily assuming facts:
+
+[source,prolog]
+----
+% Check if categorization would work given assumption
+check_categorization Project Conversation :-
+    (project_membership Conversation Project =>
+        all_artifacts_consistent Conversation).
+
+% Usage:
+?- check_categorization "anamnesis" conv_123.
+----
+
+==== 4. Universal Quantification
+
+The `pi` operator introduces **universally quantified variables**:
+
+[source,prolog]
+----
+% For all conversations, check a property
+all_conversations_valid :-
+    pi Conv\ (conversation Conv => is_valid Conv).
+
+% For all artifacts in a conversation
+all_artifacts_tracked Conv :-
+    pi Art\ (artifact_in Conv Art => has_lifecycle_record Art).
+----
+
+=== Patterns for Conversation Reasoning
+
+==== Pattern 1: Conversation Structure
+
+[source,prolog]
+----
+% Types
+kind conversation   type.
+kind turn          type.
+kind speaker       type.
+kind timestamp     type.
+
+type conv          list turn -> conversation.
+type turn          speaker -> timestamp -> content -> turn.
+type content       string.
+
+% Predicates
+type has_turn      conversation -> turn -> o.
+type turn_count    conversation -> int -> o.
+type first_turn    conversation -> turn -> o.
+type last_turn     conversation -> turn -> o.
+
+% Implementation
+has_turn (conv Turns) T :- member T Turns.
+
+turn_count (conv Turns) N :- length Turns N.
+
+first_turn (conv (T :: _)) T.
+
+last_turn (conv Turns) T :-
+    reverse Turns (T :: _).
+----
+
+==== Pattern 2: Artifact Lifecycle Tracking
+
+[source,prolog]
+----
+% Types for artifact lifecycle
+kind artifact       type.
+kind lifecycle_event   type.
+kind event_type     type.
+
+type artifact       string -> artifact.
+type event         event_type -> artifact -> timestamp -> lifecycle_event.
+type created, modified, removed, evaluated   event_type.
+
+% Lifecycle predicates
+type has_event     artifact -> lifecycle_event -> o.
+type lifecycle     artifact -> list lifecycle_event -> o.
+type valid_lifecycle   list lifecycle_event -> o.
+type state_at      artifact -> timestamp -> event_type -> o.
+
+% Valid lifecycle transitions
+valid_transition created modified.
+valid_transition created removed.
+valid_transition modified modified.
+valid_transition modified removed.
+valid_transition modified evaluated.
+valid_transition removed evaluated.
+
+% Check if lifecycle is valid
+valid_lifecycle [].
+valid_lifecycle [_].
+valid_lifecycle [event T1 A Ts1, event T2 A Ts2 | Rest] :-
+    valid_transition T1 T2,
+    Ts1 < Ts2,
+    valid_lifecycle [event T2 A Ts2 | Rest].
+
+% Get current state of artifact
+state_at A T State :-
+    lifecycle A Events,
+    latest_event_before T Events (event State A _).
+
+latest_event_before T [event S A Ts] (event S A Ts) :-
+    Ts =< T.
+latest_event_before T [event _ _ Ts1, event S A Ts2 | Rest] Latest :-
+    Ts1 =< T,
+    latest_event_before T [event S A Ts2 | Rest] Latest.
+----
+
+==== Pattern 3: Cross-Conversation Fragment Linking
+
+[source,prolog]
+----
+% Types for fragment linking
+kind fragment       type.
+kind link_type      type.
+kind similarity     type.
+
+type fragment       conversation -> int -> string -> fragment.
+type references, similar_to, continues, contradicts   link_type.
+type link          fragment -> link_type -> fragment -> o.
+type similarity_score   fragment -> fragment -> float -> o.
+
+% Fragment similarity (simplified)
+similar_fragments F1 F2 :-
+    similarity_score F1 F2 Score,
+    Score > 0.7.
+
+% Transitive reference chain
+reference_chain F1 F3 :-
+    link F1 references F2,
+    link F2 references F3.
+
+% Find all related fragments
+related_fragments F Related :-
+    findall G (link F _ G) Direct,
+    findall H (link _ _ F) Inverse,
+    append Direct Inverse Related.
+
+% Cross-conversation artifact tracking
+artifact_mentioned_in A Conv :-
+    has_turn Conv (turn _ _ Content),
+    contains Content A.
+
+artifact_conversation_history A History :-
+    findall Conv (artifact_mentioned_in A Conv) History.
+----
+
+==== Pattern 4: Multi-Category Membership
+
+[source,prolog]
+----
+% Types for categories
+kind category       type.
+kind membership_strength   type.
+
+type category       string -> category.
+type primary, secondary, tangential   membership_strength.
+
+type belongs_to    conversation -> category -> membership_strength -> o.
+type category_overlap   category -> category -> conversation -> o.
+
+% Multi-category membership
+multi_category_conversation Conv :-
+    belongs_to Conv C1 _,
+    belongs_to Conv C2 _,
+    C1 \= C2.
+
+% Find conversations spanning categories
+spanning_categories C1 C2 Conversations :-
+    findall Conv (
+        (belongs_to Conv C1 _, belongs_to Conv C2 _)
+    ) Conversations.
+
+% Fuzzy category boundaries
+fuzzy_membership Conv Cat Strength :-
+    belongs_to Conv Cat primary,
+    Strength = 1.0.
+fuzzy_membership Conv Cat Strength :-
+    belongs_to Conv Cat secondary,
+    Strength = 0.6.
+fuzzy_membership Conv Cat Strength :-
+    belongs_to Conv Cat tangential,
+    Strength = 0.3.
+fuzzy_membership Conv Cat Strength :-
+    % Inferred membership from artifact overlap
+    belongs_to Conv OtherCat primary,
+    category_overlap OtherCat Cat _,
+    Strength = 0.4.
+----
+
+==== Pattern 5: Episodic Memory Queries
+
+[source,prolog]
+----
+% Types for episodic memory
+kind episode        type.
+kind memory_query   type.
+
+type episode        timestamp -> timestamp -> conversation -> episode.
+type recall         memory_query -> list episode -> o.
+
+type by_timerange   timestamp -> timestamp -> memory_query.
+type by_topic       category -> memory_query.
+type by_artifact    artifact -> memory_query.
+type by_participant  speaker -> memory_query.
+
+% Recall episodes by time range
+recall (by_timerange Start End) Episodes :-
+    findall Ep (
+        episode S E C,
+        S >= Start,
+        E =< End,
+        Ep = episode S E C
+    ) Episodes.
+
+% Recall episodes by topic
+recall (by_topic Cat) Episodes :-
+    findall Ep (
+        episode S E C,
+        belongs_to C Cat _,
+        Ep = episode S E C
+    ) Episodes.
+
+% Recall episodes mentioning artifact
+recall (by_artifact Art) Episodes :-
+    findall Ep (
+        episode S E C,
+        artifact_mentioned_in Art C,
+        Ep = episode S E C
+    ) Episodes.
+
+% Combined queries (higher-order)
+recall_combined Queries Episodes :-
+    pi Q\ (
+        member Q Queries,
+        recall Q Eps
+    ),
+    intersection_all Eps Episodes.
+----
+
+== Integration with Elixir
+
+=== Integration Strategies
+
+Elixir provides two primary mechanisms for integrating with external native code:
+
+1. **Ports** - External process communication via stdin/stdout
+2. **NIFs** (Native Implemented Functions) - Shared library loaded into BEAM VM
+
+=== Ports: Recommended Approach
+
+**Ports** create a separate OS process for the λProlog interpreter and communicate via message passing.
+
+==== Advantages
+
+[cols="1,3"]
+|===
+|Advantage |Description
+
+|**Fault Tolerance**
+|Crashes in λProlog don't crash the Elixir/BEAM VM
+
+|**Isolation**
+|Clear boundary between Elixir orchestration and λProlog reasoning
+
+|**Flexibility**
+|Can use any λProlog implementation (Teyjus, ELPI)
+
+|**Supervision**
+|Can leverage Elixir's supervisor trees to restart failed reasoners
+
+|**Debugging**
+|Easier to debug as separate processes
+|===
+
+==== Disadvantages
+
+[cols="1,3"]
+|===
+|Disadvantage |Description
+
+|**Latency**
+|IPC overhead for every query
+
+|**Serialization**
+|Must serialize/deserialize data between Elixir and λProlog
+
+|**Complexity**
+|Protocol design for communication
+|===
+
+==== Port Implementation Pattern
+
+[source,elixir]
+----
+defmodule Anamnesis.Reasoning.LambdaProlog do
+  use GenServer
+
+  @doc """
+  Start a λProlog reasoning engine (Teyjus or ELPI)
+  """
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @impl true
+  def init(opts) do
+    prolog_cmd = Keyword.get(opts, :prolog_cmd, "tjsim")
+    module = Keyword.get(opts, :module, "anamnesis")
+
+    port = Port.open(
+      {:spawn, "#{prolog_cmd} -b #{module}"},
+      [:binary, :use_stdio, :exit_status]
+    )
+
+    {:ok, %{port: port, pending: %{}}}
+  end
+
+  @doc """
+  Query the λProlog reasoner
+  """
+  def query(query_string, timeout \\ 5000) do
+    GenServer.call(__MODULE__, {:query, query_string}, timeout)
+  end
+
+  @impl true
+  def handle_call({:query, query}, from, state) do
+    # Send query to port
+    Port.command(state.port, query <> "\n")
+
+    # Track pending query
+    ref = make_ref()
+    pending = Map.put(state.pending, ref, from)
+
+    {:noreply, %{state | pending: pending}}
+  end
+
+  @impl true
+  def handle_info({port, {:data, data}}, %{port: port} = state) do
+    # Parse response
+    result = parse_prolog_response(data)
+
+    # Reply to pending query
+    [{ref, from} | _] = Map.to_list(state.pending)
+    GenServer.reply(from, {:ok, result})
+
+    pending = Map.delete(state.pending, ref)
+    {:noreply, %{state | pending: pending}}
+  end
+
+  @impl true
+  def handle_info({port, {:exit_status, status}}, %{port: port} = state) do
+    # Handle λProlog process exit
+    {:stop, {:prolog_exit, status}, state}
+  end
+
+  defp parse_prolog_response(data) do
+    # Parse λProlog output format
+    # This depends on the specific output format of your reasoner
+    String.trim(data)
+  end
+end
+----
+
+==== Supervision Tree Integration
+
+[source,elixir]
+----
+defmodule Anamnesis.Reasoning.Supervisor do
+  use Supervisor
+
+  def start_link(init_arg) do
+    Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
+  end
+
+  @impl true
+  def init(_init_arg) do
+    children = [
+      # λProlog reasoning engine
+      {Anamnesis.Reasoning.LambdaProlog,
+        prolog_cmd: "tjsim",
+        module: "anamnesis_reasoning"},
+
+      # Other reasoning components
+      # ...
+    ]
+
+    Supervisor.init(children, strategy: :one_for_one)
+  end
+end
+----
+
+=== NIFs: Performance-Critical Path
+
+NIFs load a shared library directly into the BEAM VM. Use only for performance-critical operations.
+
+==== Advantages
+
+* **Low latency** - No IPC overhead
+* **Direct memory access** - Share data structures with BEAM
+
+==== Disadvantages
+
+* **Crash risk** - NIF crashes bring down entire VM
+* **Scheduler blocking** - Long-running NIFs block BEAM scheduler
+* **Complexity** - C/C++ integration code required
+
+==== When to Use NIFs
+
+Consider NIFs only if:
+
+1. Profiling shows Port overhead is a bottleneck
+2. Real-time query response is required
+3. You have robust error handling in the NIF
+4. The λProlog code is well-tested and stable
+
+**For Anamnesis**: Start with Ports. Optimize with NIFs only if needed.
+
+=== OCaml Integration (ELPI)
+
+If using ELPI, the integration story is simpler since both the Anamnesis parser and ELPI are OCaml:
+
+[source,ocaml]
+----
+(* OCaml code using ELPI *)
+open Elpi
+
+(* Load λProlog program *)
+let program = Parse.program_from_file "anamnesis_reasoning.elpi"
+
+(* Execute query *)
+let query = Parse.query_from_string "artifact_lifecycle A Events."
+
+let result = Execute.query program query
+
+(* Process results *)
+match result with
+| Execute.Success bindings ->
+    (* Extract variable bindings *)
+    process_bindings bindings
+| Execute.Failure ->
+    (* Query failed *)
+    handle_failure ()
+----
+
+Then expose OCaml functions to Elixir via a Port protocol or compile as a NIF.
+
+=== Data Exchange Format
+
+Design a simple protocol for Elixir ↔ λProlog communication:
+
+==== Query Format (Elixir → λProlog)
+
+[source,json]
+----
+{
+  "query_id": "uuid-1234",
+  "type": "query",
+  "predicate": "artifact_lifecycle",
+  "args": ["artifact_42"],
+  "timeout": 5000
+}
+----
+
+==== Response Format (λProlog → Elixir)
+
+[source,json]
+----
+{
+  "query_id": "uuid-1234",
+  "status": "success",
+  "results": [
+    {
+      "artifact": "artifact_42",
+      "lifecycle": [
+        {"event": "created", "timestamp": 1637012345},
+        {"event": "modified", "timestamp": 1637013456},
+        {"event": "evaluated", "timestamp": 1637014567}
+      ]
+    }
+  ]
+}
+----
+
+=== Existing Elixir-Prolog Projects
+
+Several projects demonstrate Elixir-Prolog integration:
+
+[cols="1,3"]
+|===
+|Project |Description
+
+|**ex_prolog**
+|Deeply embedded DSL for Prolog in Elixir using Ports with SWI-Prolog
+
+|**Erlog**
+|Prolog interpreter in Erlang (works with Elixir, LFE, etc.)
+
+|**Exprolog**
+|Logic programming DSL like Prolog built on Elixir
+
+|**Elxlog**
+|Small Prolog processing system embedded in Elixir
+|===
+
+These provide reference implementations for integration patterns.
+
+== Example Rules for Anamnesis
+
+=== Complete Artifact Lifecycle Module
+
+[source,prolog]
+----
+% ==============================================================================
+% artifact_lifecycle.sig - Type Signatures
+% ==============================================================================
+
+sig artifact_lifecycle.
+
+% Core types
+kind artifact       type.
+kind event         type.
+kind event_type    type.
+kind timestamp     type.
+kind conversation  type.
+
+% Artifact constructor
+type artifact       string -> artifact.
+
+% Event types (lifecycle states)
+type created, modified, removed, evaluated   event_type.
+
+% Event constructor
+type event         event_type -> artifact -> conversation -> timestamp -> event.
+
+% Predicates
+type has_lifecycle      artifact -> list event -> o.
+type valid_lifecycle    list event -> o.
+type valid_transition   event_type -> event_type -> o.
+type current_state      artifact -> timestamp -> event_type -> o.
+type artifact_active    artifact -> timestamp -> o.
+type lifecycle_complete artifact -> o.
+
+% ==============================================================================
+% artifact_lifecycle.mod - Implementation
+% ==============================================================================
+
+module artifact_lifecycle.
+
+% Valid state transitions
+valid_transition created modified.
+valid_transition created removed.
+valid_transition created evaluated.
+valid_transition modified modified.
+valid_transition modified removed.
+valid_transition modified evaluated.
+valid_transition removed evaluated.
+
+% Check if a lifecycle sequence is valid
+valid_lifecycle [].
+valid_lifecycle [_].
+valid_lifecycle [event T1 A C1 Ts1, event T2 A C2 Ts2 | Rest] :-
+    valid_transition T1 T2,
+    Ts1 < Ts2,
+    valid_lifecycle [event T2 A C2 Ts2 | Rest].
+
+% Get current state of artifact at a given time
+current_state A T State :-
+    has_lifecycle A Events,
+    latest_event_before T Events (event State A _ _).
+
+% Find latest event before time T
+latest_event_before T [event S A C Ts] (event S A C Ts) :-
+    Ts =< T.
+latest_event_before T [event _ _ _ Ts1 | Rest] Latest :-
+    Ts1 > T,
+    latest_event_before T Rest Latest.
+latest_event_before T [event S A C Ts | Rest] Latest :-
+    Ts =< T,
+    (latest_event_before T Rest (event S2 A2 C2 Ts2),
+     (Ts > Ts2, Latest = event S A C Ts ; Latest = event S2 A2 C2 Ts2)
+    ; Rest = [], Latest = event S A C Ts).
+
+% Artifact is active if it's created but not removed
+artifact_active A T :-
+    current_state A T State,
+    State \= removed.
+
+% Lifecycle is complete if it ends with evaluation
+lifecycle_complete A :-
+    has_lifecycle A Events,
+    reverse Events [event evaluated _ _ _ | _].
+----
+
+=== Multi-Category Membership Module
+
+[source,prolog]
+----
+% ==============================================================================
+% categories.sig - Type Signatures
+% ==============================================================================
+
+sig categories.
+
+kind category          type.
+kind membership_strength   type.
+
+type category          string -> category.
+type primary, secondary, tangential   membership_strength.
+
+type belongs_to        conversation -> category -> membership_strength -> o.
+type multi_category    conversation -> o.
+type category_overlap  category -> category -> conversation -> o.
+type fuzzy_membership  conversation -> category -> float -> o.
+
+% ==============================================================================
+% categories.mod - Implementation
+% ==============================================================================
+
+module categories.
+
+% Conversation belongs to multiple categories
+multi_category Conv :-
+    belongs_to Conv C1 _,
+    belongs_to Conv C2 _,
+    C1 \= C2.
+
+% Find overlapping categories
+category_overlap C1 C2 Conv :-
+    belongs_to Conv C1 _,
+    belongs_to Conv C2 _,
+    C1 \= C2.
+
+% Fuzzy membership scoring
+fuzzy_membership Conv Cat 1.0 :-
+    belongs_to Conv Cat primary.
+fuzzy_membership Conv Cat 0.6 :-
+    belongs_to Conv Cat secondary.
+fuzzy_membership Conv Cat 0.3 :-
+    belongs_to Conv Cat tangential.
+
+% Inferred membership from overlap
+fuzzy_membership Conv Cat Score :-
+    belongs_to Conv OtherCat primary,
+    category_overlap OtherCat Cat SharedConv,
+    Conv = SharedConv,
+    Score = 0.4.
+----
+
+=== Cross-Conversation Fragment Linking
+
+[source,prolog]
+----
+% ==============================================================================
+% fragments.sig - Type Signatures
+% ==============================================================================
+
+sig fragments.
+
+kind fragment      type.
+kind link_type     type.
+
+type fragment      conversation -> int -> string -> fragment.
+type references, similar_to, continues, contradicts   link_type.
+
+type link          fragment -> link_type -> fragment -> o.
+type related       fragment -> fragment -> o.
+type transitive_link   fragment -> link_type -> fragment -> o.
+type find_related  fragment -> list fragment -> o.
+
+% ==============================================================================
+% fragments.mod - Implementation
+% ==============================================================================
+
+module fragments.
+
+% Two fragments are related if there's any link between them
+related F1 F2 :- link F1 _ F2.
+related F1 F2 :- link F2 _ F1.
+
+% Transitive closure of links
+transitive_link F1 T F3 :-
+    link F1 T F2,
+    link F2 T F3.
+transitive_link F1 T F2 :-
+    link F1 T F2.
+
+% Find all related fragments (direct and inverse links)
+find_related F Related :-
+    findall G (link F _ G) Direct,
+    findall H (link H _ F) Inverse,
+    append Direct Inverse All,
+    remove_duplicates All Related.
+
+% Helper: remove duplicates
+remove_duplicates [] [].
+remove_duplicates [X | Xs] Ys :-
+    member X Xs,
+    remove_duplicates Xs Ys.
+remove_duplicates [X | Xs] [X | Ys] :-
+    \+ member X Xs,
+    remove_duplicates Xs Ys.
+----
+
+=== Episodic Memory Queries
+
+[source,prolog]
+----
+% ==============================================================================
+% episodic_memory.sig - Type Signatures
+% ==============================================================================
+
+sig episodic_memory.
+
+kind episode       type.
+kind memory_query  type.
+
+type episode       timestamp -> timestamp -> conversation -> episode.
+
+type by_timerange  timestamp -> timestamp -> memory_query.
+type by_topic      category -> memory_query.
+type by_artifact   artifact -> memory_query.
+
+type recall        memory_query -> list episode -> o.
+type recall_all    list memory_query -> list episode -> o.
+
+% ==============================================================================
+% episodic_memory.mod - Implementation
+% ==============================================================================
+
+module episodic_memory.
+
+% Recall by time range
+recall (by_timerange Start End) Episodes :-
+    findall Ep (
+        Ep = episode S E C,
+        S >= Start,
+        E =< End
+    ) Episodes.
+
+% Recall by topic/category
+recall (by_topic Cat) Episodes :-
+    findall Ep (
+        Ep = episode S E C,
+        belongs_to C Cat _
+    ) Episodes.
+
+% Recall by artifact mentioned
+recall (by_artifact Art) Episodes :-
+    findall Ep (
+        Ep = episode S E C,
+        artifact_mentioned_in Art C
+    ) Episodes.
+
+% Combined queries (intersection)
+recall_all [] [].
+recall_all [Q] Episodes :- recall Q Episodes.
+recall_all [Q1, Q2 | Rest] Episodes :-
+    recall Q1 E1,
+    recall_all [Q2 | Rest] E2,
+    intersection E1 E2 Episodes.
+
+% Helper: intersection of lists
+intersection [] _ [].
+intersection [X | Xs] Ys [X | Zs] :-
+    member X Ys,
+    intersection Xs Ys Zs.
+intersection [X | Xs] Ys Zs :-
+    \+ member X Ys,
+    intersection Xs Ys Zs.
+----
+
+=== Conversation Meta-Reasoning
+
+[source,prolog]
+----
+% ==============================================================================
+% meta_conversation.sig - Type Signatures
+% ==============================================================================
+
+sig meta_conversation.
+
+% Meta-level predicates
+type about         conversation -> topic -> o.
+type discusses     conversation -> artifact -> o.
+type contaminates  conversation -> conversation -> o.
+type pure          conversation -> category -> o.
+
+% Higher-order reasoning
+type all_in_category   category -> (conversation -> o) -> o.
+type exists_in_category   category -> (conversation -> o) -> o.
+
+% ==============================================================================
+% meta_conversation.mod - Implementation
+% ==============================================================================
+
+module meta_conversation.
+
+% Contamination: conversation A contaminates B if they share artifacts
+% but belong to different primary categories
+contaminates ConvA ConvB :-
+    ConvA \= ConvB,
+    belongs_to ConvA CatA primary,
+    belongs_to ConvB CatB primary,
+    CatA \= CatB,
+    discusses ConvA Art,
+    discusses ConvB Art.
+
+% Pure conversation: only belongs to one category
+pure Conv Cat :-
+    belongs_to Conv Cat primary,
+    \+ (belongs_to Conv OtherCat _, OtherCat \= Cat).
+
+% Higher-order: check property for all conversations in category
+all_in_category Cat Property :-
+    pi Conv\ (belongs_to Conv Cat _ => Property Conv).
+
+% Higher-order: check if property holds for any conversation in category
+exists_in_category Cat Property :-
+    sigma Conv\ (belongs_to Conv Cat _, Property Conv).
+----
+
+== Learning Resources
+
+=== Essential Reading
+
+==== Books
+
+1. **Programming with Higher-Order Logic**
+   - Authors: Dale Miller, Gopalan Nadathur
+   - Publisher: Cambridge University Press (June 2012)
+   - **Primary textbook** for learning λProlog
+   - Covers theory, implementation, and applications
+   - Available at: https://www.cambridge.org/
+
+==== Papers
+
+1. **An Overview of Lambda-Prolog** (1988)
+   - Authors: Dale Miller, Gopalan Nadathur
+   - Foundational paper introducing λProlog
+   - Available: https://www.researchgate.net/publication/220986335
+
+2. **The Metalanguage λProlog and Its Implementation** (2001)
+   - Description of Teyjus implementation
+   - Available: https://link.springer.com/chapter/10.1007/3-540-44716-4_1
+
+3. **ELPI: Fast, Embeddable, λProlog Interpreter** (2015)
+   - LPAR Conference paper
+   - Describes ELPI design and implementation
+   - Available: LPAR 2015 proceedings
+
+4. **Prototyping a Functional Language using Higher-Order Logic Programming** (2018)
+   - ICFP 2018 functional pearl
+   - Practical guide to using λProlog/Makam
+   - Available: https://dl.acm.org/doi/10.1145/3236788
+
+=== Tutorials
+
+1. **Tutorial on Lambda Prolog and Its Applications to Theorem Proving** (1997)
+   - Author: Amy Felty
+   - Practical introduction to λProlog
+   - Available: http://www.cs.ucf.edu/~leavens/learning-LambdaProlog.html
+
+2. **Program Analysis in Lambda Prolog** (1998)
+   - Author: John Hannan
+   - PLILP Conference tutorial
+   - Focus on program analysis applications
+
+3. **Programming in Higher-Order Logic** (2009)
+   - Author: Alwen Tiu
+   - Course materials
+   - Available through academic channels
+
+=== Online Resources
+
+==== Official Sites
+
+* **Dale Miller's λProlog Page**: https://www.lix.polytechnique.fr/Labo/Dale.Miller/lProlog/
+  - Language overview
+  - FAQ
+  - Research papers
+  - Code examples
+
+* **Teyjus Implementation**: https://teyjus.cs.umn.edu/
+  - Downloads
+  - Documentation wiki
+  - Examples
+  - User manual
+
+* **ELPI Repository**: https://github.com/LPCIC/elpi
+  - Source code
+  - Installation instructions
+  - API documentation
+  - Example programs
+
+==== Code Examples
+
+* **Teyjus Examples**: https://teyjus.cs.umn.edu/old/examples/index.html
+  - Formula manipulation
+  - Theorem proving
+  - Compiler implementation
+  - Interactive prover
+
+* **λProlog Code Collection**: https://www.lix.polytechnique.fr/~dale/lProlog/examples/code.html
+  - Higher-order Horn clauses
+  - Lambda-term unification
+  - Quantification examples
+
+* **Book Examples**: Programming with Higher-Order Logic book includes extensive code examples
+
+=== Community
+
+* **Mailing Lists**: Check Teyjus and ELPI repositories for discussion groups
+* **Stack Overflow**: Tag `lambda-prolog` for questions
+* **GitHub Issues**: Both Teyjus and ELPI have active issue trackers
+
+=== Learning Path for Anamnesis Team
+
+1. **Week 1: Foundations**
+   - Read "An Overview of Lambda-Prolog" paper
+   - Install Teyjus or ELPI
+   - Work through basic examples from official sites
+
+2. **Week 2: HOAS and Meta-Programming**
+   - Study HOAS chapter in "Programming with Higher-Order Logic"
+   - Experiment with lambda-term representation
+   - Try meta-programming examples
+
+3. **Week 3: Anamnesis-Specific Patterns**
+   - Implement artifact lifecycle tracking (from this document)
+   - Experiment with conversation structure representation
+   - Test cross-conversation linking patterns
+
+4. **Week 4: Integration**
+   - Set up Elixir Port integration
+   - Design query/response protocol
+   - Benchmark performance
+
+5. **Week 5: Advanced Topics**
+   - Explore constraint handling rules (ELPI)
+   - Implement episodic memory queries
+   - Optimize for Anamnesis use cases
+
+== Recommendations for Anamnesis
+
+=== Implementation Strategy
+
+==== Phase 1: Proof of Concept (Milestone 1 Compatible)
+
+1. **Use ELPI** for easier OCaml integration
+2. **Simple artifact lifecycle tracking** - Implement basic created→modified→removed→evaluated
+3. **Single conversation reasoning** - Don't worry about cross-conversation yet
+4. **Standalone testing** - Test λProlog code independently before Elixir integration
+
+==== Phase 2: Integration
+
+1. **OCaml bridge** - Call ELPI from OCaml parser
+2. **Elixir Port** - Wrap OCaml+ELPI as Port process
+3. **JSON protocol** - Simple query/response format
+4. **Supervised process** - Use Elixir supervision for fault tolerance
+
+==== Phase 3: Advanced Reasoning
+
+1. **Cross-conversation linking** - Implement fragment similarity and references
+2. **Multi-category membership** - Handle conversation categorization
+3. **Episodic memory** - Complex temporal queries
+4. **Constraint handling** - Use CHR for dependency tracking
+
+=== Architecture Decision
+
+**Recommended Stack:**
+
+```
+Elixir (orchestration)
+  ↓ Port
+OCaml (parsing + reasoning bridge)
+  ↓ Library call
+ELPI (λProlog reasoning)
+  ↓ SPARQL generation
+Virtuoso (RDF storage)
+```
+
+**Rationale:**
+
+* ELPI integrates seamlessly with OCaml parser
+* Port provides fault tolerance
+* OCaml can generate SPARQL from λProlog results
+* Clean separation of concerns
+
+=== Performance Considerations
+
+1. **Batch Processing** - Anamnesis processes conversation dumps, not real-time
+2. **Caching** - Cache frequent queries in Elixir ETS
+3. **Incremental Updates** - Update RDF store incrementally, not full re-processing
+4. **Parallel Reasoning** - Use multiple λProlog processes for independent conversations
+
+=== Testing Strategy
+
+1. **Unit Tests** - Test λProlog predicates in isolation using Teyjus/ELPI test harnesses
+2. **Integration Tests** - Test Elixir ↔ λProlog communication
+3. **Property-Based Testing** - Use PropEr (Erlang) to test lifecycle validity
+4. **Proving Ground** - Test on zotero-voyant-export contaminated conversations
+
+=== Alternative Considerations
+
+If λProlog proves too complex or integration challenging:
+
+**Alternative 1: Datalog (Soufflé, Flix)**
+- **Pros**: Simpler, guaranteed termination, efficient
+- **Cons**: Less expressive, no HOAS, harder to represent artifacts
+
+**Alternative 2: Julia + Knowledge Graphs**
+- **Pros**: Already in stack, good RDF support
+- **Cons**: Less suited for meta-reasoning, more imperative
+
+**Alternative 3: λProlog for design, Julia for implementation**
+- **Pros**: Use λProlog as specification language, implement in Julia
+- **Cons**: Lose formal guarantees, duplication of logic
+
+**Recommendation**: Stick with λProlog (ELPI) unless prototyping reveals fundamental issues.
+
+== Conclusion
+
+λProlog, particularly via the ELPI implementation, provides a theoretically sound and practically viable solution for meta-reasoning in the Anamnesis project. Its native support for Higher-Order Abstract Syntax (HOAS), hypothetical reasoning, and meta-level programming make it ideal for representing and reasoning about:
+
+* **Conversation structure and relationships**
+* **Artifact lifecycles and transformations**
+* **Cross-conversation fragment linking**
+* **Multi-category membership and fuzzy boundaries**
+* **Episodic memory queries**
+
+The integration path via OCaml (for ELPI) and Elixir Ports provides:
+
+* **Fault tolerance** - Crashes isolated from main system
+* **Type safety** - OCaml + λProlog both statically typed
+* **Functional paradigm** - Consistent with Anamnesis architecture
+* **Academic rigor** - Formal semantics and verification potential
+
+**Next Steps:**
+
+1. Install ELPI in development environment
+2. Implement artifact lifecycle module (from this document)
+3. Test on simple conversation dumps
+4. Design OCaml-ELPI integration
+5. Prototype Elixir Port communication
+6. Iterate based on zotero-voyant-export proving ground
+
+**Expected Outcome:** A robust, formally grounded reasoning system capable of untangling multi-LLM conversation threads and tracking knowledge artifacts across episodic memory boundaries.
+
+== References
+
+1. Miller, D., & Nadathur, G. (2012). *Programming with Higher-Order Logic*. Cambridge University Press.
+
+2. Miller, D., & Nadathur, G. (1988). *An Overview of Lambda-Prolog*. https://www.researchgate.net/publication/220986335
+
+3. Nadathur, G., & Miller, D. (2001). *The Metalanguage λProlog and Its Implementation*. Springer. https://link.springer.com/chapter/10.1007/3-540-44716-4_1
+
+4. Tassi, E., & Sacerdoti Coen, C. (2015). *ELPI: Fast, Embeddable, λProlog Interpreter*. LPAR 2015.
+
+5. Stampoulis, A., & Chlipala, A. (2018). *Prototyping a Functional Language using Higher-Order Logic Programming: A Functional Pearl on Learning the Ways of λProlog/Makam*. ICFP 2018. https://dl.acm.org/doi/10.1145/3236788
+
+6. Teyjus Project. (2023). *Teyjus: An Implementation of λProlog*. https://teyjus.cs.umn.edu/
+
+7. LPCIC Group. (2024). *ELPI: Embeddable Lambda Prolog Interpreter*. https://github.com/LPCIC/elpi
+
+8. Miller, D. (2024). *λProlog Home Page*. https://www.lix.polytechnique.fr/Labo/Dale.Miller/lProlog/
+
+9. Felty, A. (1997). *Tutorial on Lambda Prolog and Its Applications to Theorem Proving*.
+
+10. Wikipedia. (2024). *λProlog*. https://en.wikipedia.org/wiki/%CE%9BProlog
+
+== Appendix A: Quick Reference
+
+=== λProlog Syntax Quick Reference
+
+[source,prolog]
+----
+% Type declarations (in .sig file)
+kind typename  type.
+type constructor  arg_type -> ... -> result_type.
+type predicate    arg_type -> ... -> o.
+
+% Module declaration (in .mod file)
+module modulename.
+
+% Clause definition
+predicate Args :- Body.
+
+% Operators
+P1, P2          % Conjunction (and)
+P1 ; P2         % Disjunction (or)
+P1 => P2        % Implication (hypothetical)
+pi X\ P         % Universal quantification (for all X)
+sigma X\ P      % Existential quantification (exists X)
+X\ Body         % Lambda abstraction
+
+% Built-in predicates
+member X List
+append L1 L2 L3
+length List N
+findall Pattern Goal Results
+----
+
+=== Common Patterns Cheatsheet
+
+[source,prolog]
+----
+% Recursive list processing
+process_list [] BaseCase.
+process_list [H|T] Result :-
+    process_element H R1,
+    process_list T R2,
+    combine R1 R2 Result.
+
+% Hypothetical reasoning
+check_property X :-
+    (assumption X => test_under_assumption X).
+
+% Higher-order predicate
+apply Pred X Result :- Pred X Result.
+
+% Transitive closure
+reachable X Y :- edge X Y.
+reachable X Z :- edge X Y, reachable Y Z.
+----
+
+=== ELPI vs Teyjus Command Comparison
+
+[cols="1,1,1"]
+|===
+|Task |Teyjus |ELPI
+
+|Compile
+|`tjcc module`
+|`elpi-compiler module.elpi`
+
+|Run
+|`tjsim -b module`
+|`elpi module.elpi`
+
+|Interactive
+|Not supported
+|`elpi` (REPL)
+
+|Check types
+|`tjcc -c module`
+|Automatic during load
+|===
+
+== Appendix B: Glossary
+
+[cols="1,3"]
+|===
+|Term |Definition
+
+|**HOAS**
+|Higher-Order Abstract Syntax - representing object language binding using meta-language binding
+
+|**HOHH**
+|Higher-Order Hereditary Harrop formulas - the logical foundation of λProlog
+
+|**Pattern Unification**
+|Restricted form of higher-order unification that is decidable and efficient
+
+|**Hypothetical Reasoning**
+|Temporarily assuming facts to explore consequences (via `=>` operator)
+
+|**Lambda Tree Syntax**
+|Using lambda terms as data structures for representing syntax with binding
+
+|**Port**
+|Elixir/Erlang mechanism for communicating with external OS processes
+
+|**NIF**
+|Native Implemented Function - shared library loaded into BEAM VM
+
+|**CHR**
+|Constraint Handling Rules - meta-level rules for managing constraints
+
+|**Meta-Programming**
+|Writing programs that reason about or manipulate other programs
+
+|**Artifact**
+|(Anamnesis) Code, document, or concept created/modified in conversations
+|===
+
+---
+*Document Version: 1.0*
+*Last Updated: 2025-11-22*
+*Status: Research Complete*

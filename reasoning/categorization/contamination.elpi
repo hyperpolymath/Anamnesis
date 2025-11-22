@@ -1,0 +1,57 @@
+% Contamination Detection
+% Identify conversations that mix artifacts across different primary projects
+
+kind artifact type.
+
+% Predicates
+type discusses conversation -> artifact -> prop.
+type contaminates conversation -> conversation -> prop.
+type contamination_spread conversation -> list conversation -> prop.
+type contamination_risk conversation -> float -> prop.
+type find_contaminated list conversation -> prop.
+
+% Cross-project contamination: conversations sharing artifacts
+contaminates ConvA ConvB :-
+    belongs_to ConvA CatA primary,
+    belongs_to ConvB CatB primary,
+    CatA \= CatB,
+    discusses ConvA Art,
+    discusses ConvB Art.
+
+% Find all conversations contaminated by a given one (transitive)
+contamination_spread Conv Contaminated :-
+    findall C (contaminates Conv C) Direct,
+    maplist contamination_spread Direct Indirect,
+    flatten Indirect IndirectList,
+    append Direct IndirectList All,
+    remove_duplicates All Contaminated.
+
+% Contamination risk score (0.0 to 1.0)
+% Higher when conversation has many non-primary category memberships
+contamination_risk Conv Risk :-
+    belongs_to Conv PrimaryProj primary,
+    findall Cat (belongs_to Conv Cat _) AllCats,
+    filter (λc\\ c \= PrimaryProj) AllCats OtherCats,
+    length OtherCats NumOther,
+    length AllCats Total,
+    Total > 0,
+    Risk is NumOther / Total.
+
+% Find all contaminated conversation pairs
+find_contaminated Pairs :-
+    findall (ConvA, ConvB) (contaminates ConvA ConvB) Pairs.
+
+% Example data
+discusses "conv-001" "artifact-abc".
+discusses "conv-002" "artifact-abc".
+discusses "conv-003" "artifact-xyz".
+
+% Queries:
+% ?- contaminates "conv-001" ConvB.
+% ConvB = "conv-002"  (if conv-001 is anamnesis:primary, conv-002 is zotero-nsai:primary)
+
+% ?- contamination_risk "conv-001" Risk.
+% Risk = 0.333...  (1 tangential / (1 primary + 1 tangential + 1 not-counted))
+
+% ?- find_contaminated Pairs.
+% Pairs = [("conv-001", "conv-002"), ...]

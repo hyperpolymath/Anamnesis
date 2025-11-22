@@ -1,0 +1,1967 @@
+= Julia Reservoir Computing Research
+:author: Anamnesis Project Research
+:date: 2025-11-22
+:doctype: article
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+:experimental:
+
+[abstract]
+--
+Comprehensive research on reservoir computing libraries and implementations in Julia for the Anamnesis project. This document covers pure Julia implementations (NO PYTHON), focusing on ReservoirComputing.jl, Echo State Networks, spiking neural networks, KBANN integration possibilities, performance benchmarks, and integration patterns with RDF/knowledge graph data.
+--
+
+== Executive Summary
+
+=== Key Findings
+
+* **ReservoirComputing.jl** is the primary, mature, production-ready library for reservoir computing in Julia
+* Part of the **SciML (Scientific Machine Learning)** ecosystem - well-maintained, actively developed
+* **Pure Julia implementation** with CUDA/GPU support for high-performance computing
+* **Significantly faster** than Python alternatives (PyRCN, ReservoirPy, pytorch-esn)
+* **Multiple model types** supported: ESN, Hybrid ESN, Deep ESN, GRU-ESN, Cellular Automata-based RC
+* **No native KBANN implementation** exists in Julia - will require custom development
+* **Spiking neural networks** available through SpikingNeuralNetworks.jl (for LSM implementations)
+* **RDF integration** possible via RDF.jl + GraphNeuralNetworks.jl ecosystem
+
+=== Critical Constraints Met
+
+✅ **NO PYTHON** - All recommended libraries are pure Julia +
+✅ **Type safety** - Julia's type system + SciML ecosystem guarantees +
+✅ **Functional paradigm** - Julia naturally supports functional programming +
+✅ **Academic rigor** - Published in JMLR, peer-reviewed, well-documented +
+✅ **Multi-platform** - CPU and GPU support via CUDA.jl
+
+== ReservoirComputing.jl
+
+=== Overview
+
+*Repository*: https://github.com/SciML/ReservoirComputing.jl +
+*Documentation*: https://docs.sciml.ai/ReservoirComputing/stable/ +
+*License*: MIT +
+*Paper*: Martinuzzi et al., JMLR 2022 (Volume 23, Number 288) +
+*Maintained by*: SciML (NumFOCUS sponsored project)
+
+ReservoirComputing.jl is an open-source Julia library providing efficient and modular implementations of reservoir computing models for temporal and sequential tasks such as time series prediction and modeling complex dynamical systems.
+
+=== Key Capabilities
+
+==== Supported Models
+
+[cols="1,3"]
+|===
+|Model Type |Description
+
+|**Echo State Networks (ESN)**
+|Standard implementation (Lukoševičius, 2012) with multiple variants
+
+|**Hybrid ESN**
+|Combines data-driven reservoir with knowledge augmentation (Pathak et al., 2018)
+
+|**Deep ESN**
+|Multi-layer reservoir architectures for hierarchical feature learning
+
+|**GRU-ESN**
+|Gated Recurrent Unit-based reservoirs (Wang et al., 2020)
+
+|**Double Activation ESN**
+|Dual activation functions for enhanced dynamics (Lun et al., 2015)
+
+|**Cellular Automata RC**
+|One-dimensional cellular automata as reservoir substrate
+
+|**Reservoir Memory Machines**
+|Enhanced memory capabilities for long-term dependencies
+|===
+
+==== Reservoir Types
+
+* `RandSparseReservoir` - Standard sparse random connectivity
+* `PseudoSVDReservoir` - Optimized spectral properties via SVD
+* `DelayLineReservoir` - Time-delayed feedback connections
+* `CellularAutomataReservoir` - Discrete dynamical systems as reservoir
+
+==== Training Algorithms
+
+* **Ridge Regression** (`StandardRidge`) - Primary method, regularized linear regression
+* **Linear Models** - Various linear readout strategies
+* **Gaussian Process Regression** - Probabilistic readout layer
+* **LIBSVM** - Support vector machine-based training
+
+==== Input/Output Methods
+
+* **Diverse input layers** - Flexible data preprocessing and encoding
+* **State extension** - Augmenting reservoir states with additional features
+* **State padding** - Temporal alignment and boundary handling
+* **Generative prediction** - Autonomous generation of time series
+* **Predictive methods** - Next-step and multi-step-ahead forecasting
+
+=== Installation
+
+[source,julia]
+----
+# Requires Julia 1.10 or higher
+using Pkg
+Pkg.add("ReservoirComputing")
+----
+
+=== Example Usage
+
+==== Basic Echo State Network
+
+[source,julia]
+----
+using ReservoirComputing
+using Plots
+
+# Generate training data (e.g., Lorenz system)
+function lorenz!(du, u, p, t)
+    σ, ρ, β = p
+    du[1] = σ * (u[2] - u[1])
+    du[2] = u[1] * (ρ - u[3]) - u[2]
+    du[3] = u[1] * u[2] - β * u[3]
+end
+
+# Generate time series data
+using OrdinaryDiffEq
+u0 = [1.0, 0.0, 0.0]
+tspan = (0.0, 1000.0)
+p = [10.0, 28.0, 8/3]
+prob = ODEProblem(lorenz!, u0, tspan, p)
+sol = solve(prob, Tsit5(), saveat=0.02)
+data = Array(sol)
+
+# Split into training and testing
+train_len = 5000
+predict_len = 1000
+train_data = data[:, 1:train_len]
+test_data = data[:, train_len+1:train_len+predict_len]
+
+# Create and train ESN
+reservoir = RandSparseReservoir(100, radius=1.2, sparsity=0.1)
+input_layer = DenseLayer()
+readout = StandardRidge(ridge_parameter=1e-6)
+
+esn = ESN(reservoir,
+          input_layer=input_layer,
+          readout=readout,
+          reservoir_driver=RNN())
+
+# Train
+output_layer = train(esn, train_data)
+
+# Predict
+prediction = esn(GenerativeMode(), predict_len, output_layer)
+
+# Visualize
+plot(test_data[1,:], label="True")
+plot!(prediction[1,:], label="Predicted")
+----
+
+==== Hybrid ESN with Knowledge Augmentation
+
+[source,julia]
+----
+# Define known dynamics (e.g., simplified model)
+function knowledge_model(u, p, t)
+    # Simplified physics-based model
+    du = similar(u)
+    # ... model equations
+    return du
+end
+
+# Create hybrid ESN combining data and knowledge
+hybrid_esn = HybridESN(reservoir,
+                       knowledge_model=knowledge_model,
+                       hybrid_coupling=0.5,  # Balance data/knowledge
+                       input_layer=input_layer,
+                       readout=readout)
+
+# Training proceeds similarly
+output_layer = train(hybrid_esn, train_data)
+----
+
+=== Performance Benchmarks
+
+==== Benchmark Setup
+
+*Test System*:
+
+* CPU: Intel i9-11900H
+* GPU: NVIDIA GeForce RTX 3050 Ti
+* RAM: 16 GB
+* Task: Mackey-Glass next-step prediction
+* Training length: 4999 timesteps
+* Prediction length: 4999 timesteps
+* Precision: float64 (CPU), float32 (GPU)
+
+==== Comparison with Python Libraries
+
+*Tested versions*:
+
+* PyRCN v0.0.16
+* ReservoirPy v0.3.2
+* pytorch-esn (GitHub, March 2022)
+* ReservoirComputing.jl v0.8 RC
+
+*Results*: ReservoirComputing.jl demonstrated **significantly better computational speed** compared to all Python alternatives in both training and prediction phases.
+
+==== GPU Acceleration
+
+* **CUDA support** via CUDA.jl integration
+* Compatible with CUDA 4 and CUDA 5
+* Precision: typically float32 for GPU operations
+* Performance scales well with reservoir size
+* Seamless switching between CPU and GPU via array types
+
+[source,julia]
+----
+using CUDA
+
+# Move data to GPU
+gpu_data = CuArray(train_data)
+
+# Create ESN with GPU arrays
+# (ReservoirComputing.jl automatically detects array type)
+output_layer = train(esn, gpu_data)
+----
+
+=== Modularity and Extensibility
+
+ReservoirComputing.jl leverages Julia's **multiple dispatch** architecture, enabling:
+
+* **Seamless mixing** of custom and built-in components
+* **Easy extension** of reservoir types, training methods, and prediction modes
+* **Integration** with broader SciML ecosystem (DifferentialEquations.jl, etc.)
+* **Type stability** for performance optimization
+
+=== Limitations and Future Work
+
+* No built-in support for **spiking reservoirs** (use SpikingNeuralNetworks.jl separately)
+* No native **knowledge-based neural network** (KBANN) integration
+* Graph-structured reservoirs require custom implementation
+* RDF/knowledge graph integration needs external orchestration
+
+== Alternative Julia Reservoir Computing Libraries
+
+=== EchoStateNetworks.jl
+
+*Repository*: https://github.com/peakbook/EchoStateNetworks.jl +
+*Status*: Active, smaller scope than ReservoirComputing.jl
+
+A focused, standalone implementation of Echo State Networks in Julia. More minimalist than ReservoirComputing.jl.
+
+*Use case*: Educational purposes, simpler API for basic ESN tasks.
+
+*Limitations*: Fewer model variants, less active maintenance.
+
+=== minimalESN.jl
+
+*Website*: https://mantas.info/code/simple_esn/ +
+*Author*: Mantas Lukoševičius (ESN pioneer) +
+*Status*: Educational/reference implementation
+
+Minimalist self-contained source code demonstrating ESN implementation from scratch.
+
+*Tested on*: Julia 1.0.5 and 1.4.2 +
+*Dependencies*: Plots.jl only
+
+*Use case*: Learning ESN fundamentals, understanding core algorithms.
+
+*Limitations*: Not designed for production use, minimal features.
+
+=== Recommendation
+
+**Use ReservoirComputing.jl** for Anamnesis project:
+
+* Production-ready, well-maintained
+* SciML ecosystem integration
+* GPU support
+* Comprehensive documentation
+* Active development
+* Published and peer-reviewed
+
+== Echo State Networks (ESN) in Julia
+
+=== Theory
+
+Echo State Networks (ESNs) are a type of recurrent neural network where:
+
+1. **Input layer** encodes external signals into reservoir
+2. **Reservoir** (randomly initialized, fixed weights) transforms input into high-dimensional space
+3. **Readout layer** (trained) maps reservoir states to desired output
+
+*Key property*: **Echo State Property** - reservoir dynamics must be contractive, ensuring dependence on recent inputs fades over time.
+
+=== Critical Parameters
+
+[cols="1,2,1"]
+|===
+|Parameter |Description |Typical Range
+
+|**Spectral radius**
+|Largest eigenvalue of reservoir weight matrix
+|0.8 - 1.5
+
+|**Sparsity**
+|Fraction of zero connections
+|0.9 - 0.99
+
+|**Input scaling**
+|Strength of input signal
+|0.1 - 1.0
+
+|**Reservoir size**
+|Number of reservoir neurons
+|100 - 5000
+
+|**Leakage rate**
+|Temporal smoothing parameter
+|0.1 - 1.0
+|===
+
+=== Variants Implemented in ReservoirComputing.jl
+
+==== Standard ESN
+
+Classic implementation following Jaeger (2001) and Lukoševičius (2012).
+
+[source,julia]
+----
+reservoir = RandSparseReservoir(
+    N,                      # reservoir size
+    radius=1.2,             # spectral radius
+    sparsity=0.1            # connection sparsity
+)
+----
+
+==== Hybrid ESN
+
+Combines data-driven reservoir with physics-informed knowledge (Pathak et al., 2018).
+
+*Application*: When partial system knowledge exists (e.g., simplified dynamics, conservation laws).
+
+*Benefit*: Improved extrapolation, reduced training data requirements.
+
+==== Deep ESN
+
+Multiple stacked reservoir layers for hierarchical temporal feature extraction.
+
+*Application*: Complex temporal patterns requiring multi-scale dynamics.
+
+*Architecture*: Input → Reservoir₁ → Reservoir₂ → ... → ReservoirN → Readout
+
+==== GRU-ESN
+
+Incorporates gating mechanisms from Gated Recurrent Units (Wang et al., 2020).
+
+*Benefit*: Better long-term dependency modeling, adaptive forgetting.
+
+==== Double Activation Function ESN
+
+Uses two activation functions within reservoir (Lun et al., 2015).
+
+*Benefit*: Richer reservoir dynamics, improved approximation capabilities.
+
+=== Best Practices
+
+1. **Spectral radius tuning** - Start at 0.9-1.2, tune for stability vs. memory
+2. **Washout period** - Discard initial transient states (typically 100-500 steps)
+3. **Ridge parameter** - Cross-validate regularization to prevent overfitting
+4. **Reservoir size** - Balance complexity vs. computational cost
+5. **State augmentation** - Include input, squared states, or cross-products for richer features
+
+== Liquid State Machines (LSM) and Spiking Neural Networks
+
+=== Theory
+
+**Liquid State Machines** (LSMs) are a reservoir computing paradigm using spiking neural networks as the reservoir substrate.
+
+*Key differences from ESN*:
+
+* **Discrete spikes** instead of continuous activations
+* **Temporal coding** via spike timing
+* **Biological plausibility** - closer to neural computation
+* **Event-driven** - sparse, asynchronous processing
+
+*Architecture*:
+
+1. **Input layer** - Encodes signals as spike trains
+2. **Liquid** (reservoir) - Recurrently connected spiking neurons
+3. **Readout layer** - Trained to decode liquid state
+
+=== Julia Spiking Neural Network Packages
+
+==== SpikingNeuralNetworks.jl (Recommended)
+
+*Repository*: https://github.com/JuliaSNN/SpikingNeuralNetworks.jl +
+*Organization*: JuliaSNN +
+*Status*: Active development
+
+*Ecosystem*:
+
+* **SNNPlots.jl** - Visualization of recordings
+* **SNNUtils.jl** - Stimulation protocols and analysis
+
+*Features*:
+
+* Multiple neuron models (Leaky Integrate-and-Fire, Izhikevich, etc.)
+* Synaptic plasticity rules (STDP, etc.)
+* CPU and GPU support
+* Integration with Julia ML ecosystem
+
+[source,julia]
+----
+using SpikingNeuralNetworks
+
+# Define neuron population
+neurons = LIF(N=1000, τm=20.0, θ=1.0, Vrest=0.0)
+
+# Create recurrent connections
+W = sparse_random_matrix(1000, 1000, sparsity=0.9)
+liquid = RecurrentLayer(neurons, W)
+
+# Stimulation and recording
+# ... (see package documentation)
+----
+
+==== SpikingNN.jl
+
+*Repository*: https://github.com/darsnack/SpikingNN.jl +
+*Status*: Under development (expect API changes)
+
+Multi-platform spiking neural network simulator supporting CPU, GPU, and event-driven backends.
+
+*Warning*: Less mature, API unstable.
+
+==== TrainSpikingNet.jl
+
+*Repository*: https://github.com/SpikingNetwork/TrainSpikingNet.jl +
+*Focus*: Training spiking recurrent neural networks
+
+Specialized for optimization of spiking RNNs with gradient-based methods.
+
+==== SpikeNet.jl
+
+*Repository*: https://github.com/damiendr/SpikeNet.jl +
+*Status*: Less actively maintained
+
+Older spiking neural network simulator.
+
+==== SpikeNetOpt.jl
+
+*Repository*: https://github.com/JuliaNeuroscience/SpikeNetOpt.jl +
+*Focus*: Fitting spiking models to data
+
+Combines SpikingNeuralNetworks.jl with Metaheuristics.jl for optimization.
+
+=== Implementing LSM in Julia
+
+**Recommended approach**:
+
+1. Use **SpikingNeuralNetworks.jl** for liquid (reservoir) implementation
+2. Implement readout training via **linear regression** (similar to ESN)
+3. Interface with **ReservoirComputing.jl** readout methods if possible
+
+[source,julia]
+----
+# Pseudocode for LSM in Julia
+using SpikingNeuralNetworks
+
+# 1. Create spiking reservoir (liquid)
+liquid = create_liquid(
+    N_neurons=1000,
+    neuron_type=LIF,
+    connectivity=sparse_random,
+    sparsity=0.9
+)
+
+# 2. Encode input as spike trains
+spike_input = poisson_encoding(input_signal, rate=100)
+
+# 3. Simulate liquid dynamics
+liquid_state = simulate(liquid, spike_input)
+
+# 4. Extract features from liquid state
+# (e.g., spike counts in time windows)
+features = extract_features(liquid_state, window=10.0)
+
+# 5. Train linear readout
+using MLJ
+readout = train_ridge_regression(features, targets)
+
+# 6. Prediction
+prediction = readout(features_test)
+----
+
+=== Challenges and Considerations
+
+* **Encoding/Decoding** - Converting continuous signals to/from spike trains
+* **Computational cost** - Event-driven simulation can be expensive
+* **Hyperparameter tuning** - Many biological parameters to optimize
+* **Training methods** - Limited gradient-based training options
+
+=== LSM vs. ESN Comparison
+
+[cols="1,2,2"]
+|===
+|Aspect |Echo State Networks |Liquid State Machines
+
+|**Activation**
+|Continuous (tanh, sigmoid)
+|Discrete spikes (binary events)
+
+|**Computation**
+|Dense matrix operations
+|Event-driven, sparse updates
+
+|**Biological plausibility**
+|Low
+|High
+
+|**Theoretical foundation**
+|Dynamical systems theory
+|Neuroscience, spike timing
+
+|**Training efficiency**
+|Fast (linear regression)
+|Moderate (spike encoding overhead)
+
+|**Hardware implementation**
+|GPUs, CPUs
+|Neuromorphic chips (SpiNNaker, Loihi)
+
+|**Julia maturity**
+|Excellent (ReservoirComputing.jl)
+|Good (SpikingNeuralNetworks.jl)
+|===
+
+*Recommendation for Anamnesis*: Start with **ESN** (ReservoirComputing.jl) for rapid prototyping. Consider **LSM** (SpikingNeuralNetworks.jl) if:
+
+* Temporal precision (spike timing) is critical
+* Biological realism required
+* Future neuromorphic hardware deployment planned
+
+== Knowledge-Based Artificial Neural Networks (KBANN)
+
+=== Overview
+
+KBANN (Towell & Shavlik, 1994) is a hybrid learning system that:
+
+1. **Encodes** domain knowledge (propositional logic rules) as neural network structure
+2. **Refines** this knowledge-initialized network via backpropagation
+3. **Combines** symbolic reasoning with connectionist learning
+
+=== Core Algorithm
+
+[source,text]
+----
+1. Start with domain theory (propositional rules)
+   Example: IF A AND B THEN C
+
+2. Translate rules to neural network:
+   - Each rule becomes hidden unit
+   - Conjunctions → weighted connections
+   - Disjunctions → multiple paths
+
+3. Initialize weights from logic:
+   - Positive literal: +W
+   - Negative literal: -W
+   - Thresholds from rule structure
+
+4. Add untrained units for flexibility
+
+5. Train via backpropagation on data
+
+6. Refine/correct initial knowledge
+----
+
+=== Julia Implementation Status
+
+**Finding**: No native KBANN implementation exists in Julia.
+
+*Available in*:
+
+* MATLAB (File Exchange: Knowledge Based Neural Networks)
+* Python (GitHub: bits-mayank/KBANN)
+* Original implementation (C, unavailable)
+
+*Mentioned in*: Julia.jl AI.md (curated list) - **NOT included** in standard packages
+
+=== Implementation Strategy for Anamnesis
+
+==== Option 1: Build on Flux.jl
+
+Flux.jl is Julia's primary deep learning framework.
+
+[source,julia]
+----
+using Flux
+
+# Pseudocode for KBANN in Flux
+function encode_rule_to_network(rules::Vector{Rule})
+    # 1. Parse propositional rules
+    # 2. Create network structure
+    # 3. Initialize weights from logic
+
+    layers = []
+
+    for rule in rules
+        # Create hidden unit for this rule
+        inputs = length(rule.antecedents)
+
+        # Initialize weights: +W for positive literals, -W for negative
+        W = initialize_from_rule(rule)
+        b = initialize_threshold(rule)
+
+        layer = Dense(inputs, 1, σ, initW=()->W, initb=()->b)
+        push!(layers, layer)
+    end
+
+    # Add untrained units for flexibility
+    extra_units = Dense(n_inputs, n_extra, σ)
+    push!(layers, extra_units)
+
+    # Output layer
+    output = Dense(n_hidden_total, n_outputs, identity)
+
+    return Chain(layers..., output)
+end
+
+# Training with knowledge-augmented initialization
+model = encode_rule_to_network(domain_rules)
+loss(x, y) = Flux.mse(model(x), y)
+optimizer = Flux.Adam(0.001)
+
+Flux.train!(loss, Flux.params(model), training_data, optimizer)
+----
+
+==== Option 2: Integrate with ReservoirComputing.jl
+
+Hybrid approach combining reservoir computing with knowledge-based initialization.
+
+[source,julia]
+----
+# Knowledge-augmented reservoir
+function knowledge_reservoir(rules, N_reservoir)
+    # 1. Create structured sub-reservoir from rules
+    W_knowledge = encode_rules_as_connectivity(rules)
+
+    # 2. Create random sub-reservoir
+    W_random = sparse_random_matrix(N_reservoir, N_reservoir)
+
+    # 3. Combine: structured + random
+    W_combined = [W_knowledge; W_random]
+
+    return CustomReservoir(W_combined)
+end
+
+reservoir = knowledge_reservoir(domain_rules, N=500)
+esn = ESN(reservoir, readout=StandardRidge())
+----
+
+==== Option 3: λProlog Integration (Recommended for Anamnesis)
+
+Given Anamnesis architecture uses **λProlog/Teyjus** for meta-reasoning:
+
+[source,text]
+----
+Architecture:
+  λProlog (symbolic rules)
+      ↓ (rule extraction)
+  KBANN encoder (Julia/Flux.jl)
+      ↓ (network structure)
+  ReservoirComputing.jl (refinement)
+      ↓ (trained model)
+  Predictions + updated rules
+      ↓ (feedback)
+  λProlog (rule refinement)
+----
+
+*Workflow*:
+
+1. **λProlog** maintains conversation/artifact reasoning rules
+2. **Julia bridge** extracts rules, encodes as network structure
+3. **ReservoirComputing.jl** refines via temporal data
+4. **Results feed back** to λProlog for rule updates
+
+=== KBANN + Reservoir Computing: Novel Hybrid
+
+**Hypothesis**: Combine KBANN knowledge encoding with reservoir computing efficiency.
+
+*Benefits*:
+
+* **Structured knowledge** in network initialization
+* **Temporal dynamics** from reservoir
+* **Fast training** (linear readout)
+* **Interpretability** (traceable to rules)
+
+*Challenges*:
+
+* Untested architecture (research contribution)
+* Mapping symbolic rules to reservoir dynamics
+* Balancing knowledge vs. data-driven learning
+
+=== Implementation Roadmap
+
+[cols="1,3,2"]
+|===
+|Phase |Task |Technology
+
+|**1. Proof of Concept**
+|Implement basic KBANN in Flux.jl with propositional rules
+|Flux.jl
+
+|**2. Rule Extraction**
+|Bridge λProlog to Julia for rule extraction
+|TeyjusPort/NIF
+
+|**3. Hybrid Architecture**
+|Integrate KBANN initialization with ReservoirComputing.jl
+|Flux.jl + ReservoirComputing.jl
+
+|**4. Temporal Extension**
+|Adapt for temporal/sequential rule refinement
+|ReservoirComputing.jl
+
+|**5. RDF Integration**
+|Encode RDF ontology constraints as initial knowledge
+|RDF.jl + KBANN
+|===
+
+== Performance and GPU Support
+
+=== CPU Performance
+
+ReservoirComputing.jl is **highly optimized** for CPU execution:
+
+* **Julia's JIT compilation** produces efficient native code
+* **Type stability** enables aggressive optimization
+* **SIMD operations** for vectorized computations
+* **Sparse matrix support** via SparseArrays.jl
+
+*Benchmark*: Significantly faster than PyRCN, ReservoirPy, and pytorch-esn on Intel i9-11900H.
+
+=== GPU Acceleration
+
+==== CUDA.jl Integration
+
+ReservoirComputing.jl supports GPU acceleration via **CUDA.jl**.
+
+*Compatibility*:
+
+* CUDA 4 (documented)
+* CUDA 5 (latest, documented)
+* Requires NVIDIA GPU with CUDA support
+
+*Usage*:
+
+[source,julia]
+----
+using CUDA
+using ReservoirComputing
+
+# Move data to GPU
+train_data_gpu = CuArray(train_data)
+
+# ReservoirComputing.jl automatically detects CuArray
+# and performs operations on GPU
+output_layer = train(esn, train_data_gpu)
+
+# Prediction on GPU
+prediction_gpu = esn(Predictive(), test_data_gpu, output_layer)
+
+# Move results back to CPU if needed
+prediction_cpu = Array(prediction_gpu)
+----
+
+*Precision*: Typically **float32** for GPU (faster, less memory).
+
+==== Performance Considerations
+
+[cols="1,2,2"]
+|===
+|Aspect |CPU |GPU
+
+|**Precision**
+|float64 (default)
+|float32 (recommended)
+
+|**Best for**
+|Small to medium reservoirs (N < 1000)
+|Large reservoirs (N > 1000)
+
+|**Memory**
+|System RAM (typically abundant)
+|GPU VRAM (limited)
+
+|**Transfer overhead**
+|None
+|CPU ↔ GPU transfer can bottleneck
+
+|**Sparse operations**
+|Excellent support
+|Improving (CUDA.CUSPARSE)
+|===
+
+*Recommendation*:
+
+* **CPU**: Prototyping, small-scale experiments, sparse reservoirs
+* **GPU**: Production, large-scale, dense reservoirs, batch processing
+
+==== GPU Optimization Tips
+
+1. **Minimize transfers** - Keep data on GPU throughout pipeline
+2. **Batch processing** - Process multiple time series simultaneously
+3. **Precision trade-off** - float32 usually sufficient, 2x faster
+4. **Memory management** - Use `CUDA.reclaim()` to free GPU memory
+5. **Profile first** - Use `CUDA.@profile` to identify bottlenecks
+
+[source,julia]
+----
+using CUDA
+
+# Efficient GPU workflow
+function train_and_predict_gpu(data, esn)
+    # Move to GPU once
+    data_gpu = CuArray{Float32}(data)
+
+    # All operations on GPU
+    train_gpu = view(data_gpu, :, 1:5000)
+    test_gpu = view(data_gpu, :, 5001:end)
+
+    output_layer = train(esn, train_gpu)
+    prediction = esn(Predictive(), test_gpu, output_layer)
+
+    # Transfer back only final results
+    return Array(prediction)
+end
+----
+
+=== Scalability
+
+ReservoirComputing.jl scales well with:
+
+* **Reservoir size** (N) - Linear to quadratic depending on sparsity
+* **Time series length** (T) - Linear scaling
+* **Dimensionality** (D) - Linear in input/output dimensions
+
+*Tested*: Up to reservoirs of 5000+ neurons on GPU.
+
+=== Benchmarking Tools
+
+[source,julia]
+----
+using BenchmarkTools
+
+# Benchmark training
+@benchmark train($esn, $train_data)
+
+# Benchmark prediction
+@benchmark esn(Predictive(), $test_data, $output_layer)
+
+# Detailed profiling
+using Profile
+@profile train(esn, train_data)
+Profile.print()
+----
+
+== RDF and Knowledge Graph Integration
+
+=== Challenge
+
+Integrating reservoir computing with **RDF triple stores** and **knowledge graphs** for Anamnesis requires bridging:
+
+* **Symbolic structures** (RDF triples, ontologies)
+* **Temporal dynamics** (conversation flows, artifact lifecycles)
+* **Neural computation** (reservoir states, embeddings)
+
+=== Julia Packages for RDF
+
+==== RDF.jl
+
+*Repository*: https://github.com/JuliaPackageMirrors/RDF.jl +
+*Status*: Available, basic functionality
+
+*Features*:
+
+* RDF Graph representation
+* Serialization: N-Triples, N-Quads, Turtle
+* Triple manipulation (subject, predicate, object)
+
+*Limitation*: Basic, not as feature-rich as Python's RDFLib.
+
+[source,julia]
+----
+using RDF
+
+# Create RDF graph
+graph = RDFGraph()
+
+# Add triples
+add_triple!(graph,
+    subject="http://example.org/conversation/1",
+    predicate="http://example.org/hasArtifact",
+    object="http://example.org/artifact/A"
+)
+
+# Serialize
+write_turtle(graph, "output.ttl")
+----
+
+==== Alternative: Direct SPARQL via HTTP
+
+For **Virtuoso** integration (Anamnesis architecture), use HTTP.jl for SPARQL queries:
+
+[source,julia]
+----
+using HTTP
+using JSON3
+
+function sparql_query(endpoint::String, query::String)
+    response = HTTP.post(
+        endpoint,
+        ["Content-Type" => "application/sparql-query"],
+        query
+    )
+    return JSON3.read(response.body)
+end
+
+# Example: Query Virtuoso
+endpoint = "http://localhost:8890/sparql"
+query = """
+SELECT ?artifact ?timestamp
+WHERE {
+    ?conversation <hasArtifact> ?artifact .
+    ?artifact <createdAt> ?timestamp .
+}
+"""
+
+results = sparql_query(endpoint, query)
+----
+
+=== Julia Packages for Graph Processing
+
+==== Graphs.jl
+
+*Website*: https://juliagraphs.org/ +
+*Repository*: https://github.com/JuliaGraphs/Graphs.jl
+
+Core package for graph algorithms in Julia.
+
+*Features*:
+
+* Graph data structures (`SimpleGraph`, `SimpleDiGraph`)
+* Algorithms: shortest paths, centrality, clustering, etc.
+* Extensible via `AbstractGraph` interface
+
+[source,julia]
+----
+using Graphs
+
+# Create directed graph (e.g., conversation flow)
+g = SimpleDiGraph(100)  # 100 nodes
+
+# Add edges (e.g., artifact dependencies)
+add_edge!(g, 1, 2)  # Artifact 1 → Artifact 2
+add_edge!(g, 2, 3)
+
+# Algorithms
+shortest_path = dijkstra_shortest_paths(g, 1)
+betweenness_cent = betweenness_centrality(g)
+----
+
+==== MetaGraphs.jl
+
+*Repository*: https://github.com/JuliaGraphs/MetaGraphs.jl
+
+Extension of Graphs.jl with **metadata** on nodes and edges.
+
+*Use case*: Annotating graph with RDF properties.
+
+[source,julia]
+----
+using MetaGraphs
+
+# Create metagraph
+mg = MetaDiGraph(100)
+
+# Set node properties (e.g., from RDF)
+set_prop!(mg, 1, :uri, "http://example.org/artifact/1")
+set_prop!(mg, 1, :type, "code_snippet")
+set_prop!(mg, 1, :timestamp, "2025-11-22T10:00:00Z")
+
+# Set edge properties (e.g., relationship type)
+add_edge!(mg, 1, 2)
+set_prop!(mg, Edge(1, 2), :relation, "modifies")
+
+# Query
+get_prop(mg, 1, :type)  # "code_snippet"
+----
+
+==== GraphNeuralNetworks.jl
+
+*Website*: https://juliagraphs.org/GraphNeuralNetworks.jl/ +
+*Repository*: https://github.com/JuliaGraphs/GraphNeuralNetworks.jl +
+*Paper*: arXiv:2412.06354 (December 2024)
+
+**Graph Neural Networks** (GNNs) for deep learning on graphs.
+
+*Features*:
+
+* Based on Flux.jl (deep learning)
+* Integrates with Graphs.jl
+* Multiple GPU backends (CUDA, AMDGPU, Metal)
+* Supports heterogeneous and temporal graphs
+* Node/edge/graph-level attributes
+
+*Relevance*: Can learn embeddings of RDF knowledge graphs for reservoir input.
+
+[source,julia]
+----
+using GraphNeuralNetworks
+using Flux
+using Graphs
+
+# Create graph from RDF structure
+g = SimpleDiGraph(1000)  # 1000 RDF entities
+# ... add edges based on RDF triples
+
+# Node features (e.g., entity type embeddings)
+x = rand(Float32, 128, 1000)  # 128-dim features
+
+# Create GNN
+model = GNNChain(
+    GCNConv(128 => 64),
+    relu,
+    GCNConv(64 => 32),
+    relu
+)
+
+# Compute node embeddings
+node_embeddings = model(g, x)
+
+# Use embeddings as reservoir input
+# ...
+----
+
+=== Integration Patterns
+
+==== Pattern 1: RDF → Graph → GNN → Reservoir
+
+[source,text]
+----
+RDF Triples (Virtuoso)
+    ↓ SPARQL query
+Graph Structure (Graphs.jl)
+    ↓ GNN (GraphNeuralNetworks.jl)
+Node Embeddings
+    ↓ Time series of embeddings
+Reservoir Computing (ReservoirComputing.jl)
+    ↓
+Predictions / Classifications
+----
+
+*Use case*: Learning temporal patterns in knowledge graph evolution (artifact lifecycle).
+
+[source,julia]
+----
+# Pseudocode
+function integrate_rdf_reservoir(sparql_endpoint, time_steps)
+    embeddings_over_time = []
+
+    for t in 1:time_steps
+        # 1. Query RDF at timestep t
+        triples = sparql_query(sparql_endpoint, t)
+
+        # 2. Build graph
+        g = build_graph_from_triples(triples)
+
+        # 3. Compute GNN embeddings
+        node_features = initialize_node_features(g)
+        embeddings = gnn_model(g, node_features)
+
+        # 4. Aggregate to graph-level representation
+        graph_embedding = mean(embeddings, dims=2)
+
+        push!(embeddings_over_time, graph_embedding)
+    end
+
+    # 5. Train reservoir on embedding time series
+    embedding_series = hcat(embeddings_over_time...)
+    output_layer = train(esn, embedding_series)
+
+    return output_layer
+end
+----
+
+==== Pattern 2: RDF Constraints → KBANN → Reservoir
+
+[source,text]
+----
+RDF Ontology (OWL/RDFS)
+    ↓ Extract constraints/rules
+Symbolic Rules
+    ↓ Encode as network (KBANN)
+Knowledge-Initialized Network
+    ↓ Integrate with reservoir
+Hybrid Reservoir (knowledge + data)
+    ↓
+Refined Predictions
+----
+
+*Use case*: Encoding domain ontology (e.g., "artifacts created before modified") as network structure.
+
+==== Pattern 3: Reservoir → RDF (Prediction Export)
+
+[source,text]
+----
+Reservoir Predictions
+    ↓ Format as triples
+RDF Output
+    ↓ Store in Virtuoso
+Knowledge Graph
+----
+
+*Use case*: Storing reservoir predictions as RDF annotations (e.g., predicted next artifact action).
+
+[source,julia]
+----
+# Pseudocode
+function export_predictions_to_rdf(predictions, artifact_uris)
+    graph = RDFGraph()
+
+    for (i, pred) in enumerate(predictions)
+        artifact_uri = artifact_uris[i]
+
+        add_triple!(graph,
+            subject=artifact_uri,
+            predicate="http://anamnesis.org/predictedAction",
+            object=pred
+        )
+
+        add_triple!(graph,
+            subject=artifact_uri,
+            predicate="http://anamnesis.org/predictionTimestamp",
+            object=string(now())
+        )
+    end
+
+    # Write to file or HTTP POST to Virtuoso
+    write_turtle(graph, "predictions.ttl")
+end
+----
+
+=== Reservoir Graph Neural Networks (Emerging Research)
+
+Recent research combines reservoir computing with graph neural networks:
+
+* **Pyramidal Reservoir Graph Neural Network** - Multi-resolution graph pooling
+* **Multiresolution Reservoir GNN** - Efficient graph embeddings
+* **Dynamics-Informed Reservoir with Visibility Graphs** - Time series → graph → reservoir
+
+*Status*: Cutting-edge research, no Julia implementations yet.
+
+*Potential for Anamnesis*: Represent conversation structure as graph, use reservoir GNN for pattern extraction.
+
+=== Recommendations for Anamnesis
+
+1. **Use Graphs.jl + MetaGraphs.jl** for in-memory RDF graph representation
+2. **SPARQL via HTTP.jl** for Virtuoso integration
+3. **GraphNeuralNetworks.jl** for learning knowledge graph embeddings
+4. **ReservoirComputing.jl** for temporal dynamics on embeddings
+5. **Custom bridge** for RDF ↔ Julia data structures
+
+*Architecture*:
+
+[source,text]
+----
+Virtuoso (RDF storage)
+    ↕ SPARQL (HTTP.jl)
+Julia Orchestrator (Elixir calls Julia via ports)
+    ↓
+MetaGraphs.jl (in-memory RDF graph)
+    ↓
+GraphNeuralNetworks.jl (graph embeddings)
+    ↓
+ReservoirComputing.jl (temporal patterns)
+    ↓
+Predictions → back to Virtuoso
+----
+
+== Academic Papers and Recent Research
+
+=== Foundational Papers
+
+==== ReservoirComputing.jl
+
+* **Martinuzzi, F., Rackauckas, C., Abdelrehim, A., Mahecha, M. D., & Mora, K.** (2022). +
+  _ReservoirComputing.jl: An Efficient and Modular Library for Reservoir Computing Models._ +
+  Journal of Machine Learning Research, 23(288), 1-8. +
+  https://jmlr.org/papers/v23/22-0611.html
+
+*Key contributions*:
+
+* Comprehensive Julia implementation
+* Performance benchmarks vs. Python libraries
+* Modular design leveraging multiple dispatch
+* SciML ecosystem integration
+
+==== Echo State Networks
+
+* **Jaeger, H.** (2001). +
+  _The "echo state" approach to analysing and training recurrent neural networks._ +
+  GMD Report 148, German National Research Center for Information Technology.
+
+* **Lukoševičius, M.** (2012). +
+  _A practical guide to applying echo state networks._ +
+  Neural Networks: Tricks of the Trade, 659-686.
+
+==== Hybrid Reservoir Computing
+
+* **Pathak, J., Hunt, B., Girvan, M., Lu, Z., & Ott, E.** (2018). +
+  _Model-free prediction of large spatiotemporally chaotic systems from data: A reservoir computing approach._ +
+  Physical Review Letters, 120(2), 024102.
+
+==== Knowledge-Based Neural Networks
+
+* **Towell, G. G., & Shavlik, J. W.** (1994). +
+  _Knowledge-based artificial neural networks._ +
+  Artificial Intelligence, 70(1-2), 119-165.
+
+=== Recent Research (2024-2025)
+
+==== GraphNeuralNetworks.jl
+
+* **Lucibello, C., et al.** (2024). +
+  _GraphNeuralNetworks.jl: Deep Learning on Graphs with Julia._ +
+  arXiv:2412.06354 (December 2024). +
+  https://arxiv.org/abs/2412.06354
+
+*Relevance*: Integration with Graphs.jl, potential for RDF graph embeddings.
+
+==== Reservoir Graph Neural Networks
+
+* **Multiresolution Reservoir Graph Neural Network** (2021). +
+  IEEE Transactions on Neural Networks and Learning Systems.
+
+* **Pyramidal Reservoir Graph Neural Network** (2021). +
+  Neurocomputing.
+
+* **Dynamics-Informed Reservoir Computing with Visibility Graphs** (2025). +
+  Chaos: An Interdisciplinary Journal of Nonlinear Science, 35(9). +
+  https://pubs.aip.org/aip/cha/article/35/9/091111/3363903
+
+*Finding*: Combines time series with graph theory via visibility graphs, then applies reservoir computing.
+
+==== Neurosymbolic AI and Knowledge Graphs
+
+* **Neurosymbolic AI for Reasoning over Knowledge Graphs** (2023). +
+  arXiv:2302.07200.
+
+* **Handbook on Neurosymbolic AI and Knowledge Graphs** (IOS Press).
+
+*Relevance*: Theoretical foundation for integrating symbolic reasoning (λProlog) with neural networks (reservoir computing).
+
+=== Relevant Research Areas
+
+* **Reservoir computing for time series classification** - Established field, many applications
+* **Graph neural networks** - Rapidly growing, Julia support via GraphNeuralNetworks.jl
+* **Neurosymbolic AI** - Emerging paradigm, aligns with Anamnesis architecture
+* **Spiking neural networks** - Biological plausibility, hardware efficiency
+* **Knowledge graph embeddings** - Bridging symbolic and subsymbolic representations
+
+=== Research Gaps (Opportunities for Anamnesis)
+
+1. **KBANN in Julia** - No implementation exists, potential contribution
+2. **Reservoir computing + knowledge graphs** - Limited work, novel integration
+3. **Hybrid symbolic-neural for conversation analysis** - Unexplored application domain
+4. **Temporal knowledge graph reasoning with reservoirs** - Emerging area
+5. **Multi-LLM conversation untangling** - No prior work identified
+
+== Architecture Recommendations for Anamnesis
+
+=== Core Technology Stack
+
+[cols="1,2,2"]
+|===
+|Component |Technology |Rationale
+
+|**Reservoir Computing**
+|ReservoirComputing.jl
+|Mature, fast, SciML ecosystem, GPU support
+
+|**Graph Processing**
+|Graphs.jl + MetaGraphs.jl
+|Standard Julia graph libraries, metadata support
+
+|**Graph Neural Networks**
+|GraphNeuralNetworks.jl
+|Recent (2024), Flux.jl integration, GPU support
+
+|**Spiking Neural Networks**
+|SpikingNeuralNetworks.jl
+|JuliaSNN ecosystem, if LSM needed
+
+|**RDF Manipulation**
+|RDF.jl + HTTP.jl (SPARQL)
+|Direct Virtuoso integration
+
+|**Deep Learning**
+|Flux.jl
+|Standard Julia DL, needed for KBANN/GNN
+
+|**Knowledge Integration**
+|Custom KBANN (Flux.jl)
+|Build on Flux, integrate with λProlog
+|===
+
+=== Recommended Architecture
+
+[source,text]
+----
+┌─────────────────────────────────────────────────────────┐
+│                   Elixir Orchestrator                    │
+│  - Coordinates multi-LLM parsing                         │
+│  - Manages conversation ingestion                        │
+└────────────┬─────────────────────────────┬──────────────┘
+             │                             │
+             ↓                             ↓
+   ┌─────────────────┐          ┌──────────────────┐
+   │  OCaml Parser   │          │  λProlog/Teyjus  │
+   │  (via ports)    │          │  (meta-reasoning)│
+   └────────┬────────┘          └────────┬─────────┘
+            │                            │
+            │ Parsed                     │ Rules/
+            │ conversations              │ constraints
+            ↓                            ↓
+   ┌──────────────────────────────────────────────┐
+   │            Julia Processing Layer            │
+   │                                              │
+   │  ┌─────────────────────────────────────┐    │
+   │  │  1. RDF Manipulation (RDF.jl)       │    │
+   │  │     - Build knowledge graph         │    │
+   │  └──────────────┬──────────────────────┘    │
+   │                 ↓                            │
+   │  ┌─────────────────────────────────────┐    │
+   │  │  2. Graph Processing                │    │
+   │  │     - Graphs.jl: Structure          │    │
+   │  │     - MetaGraphs.jl: Metadata       │    │
+   │  └──────────────┬──────────────────────┘    │
+   │                 ↓                            │
+   │  ┌─────────────────────────────────────┐    │
+   │  │  3. Graph Embeddings                │    │
+   │  │     - GraphNeuralNetworks.jl        │    │
+   │  │     - Node/edge representations     │    │
+   │  └──────────────┬──────────────────────┘    │
+   │                 ↓                            │
+   │  ┌─────────────────────────────────────┐    │
+   │  │  4. Knowledge Integration (KBANN)   │    │
+   │  │     - Flux.jl custom implementation │    │
+   │  │     - Rules from λProlog            │    │
+   │  └──────────────┬──────────────────────┘    │
+   │                 ↓                            │
+   │  ┌─────────────────────────────────────┐    │
+   │  │  5. Reservoir Computing             │    │
+   │  │     - ReservoirComputing.jl         │    │
+   │  │     - Temporal pattern learning     │    │
+   │  │     - Knowledge-augmented reservoir │    │
+   │  └──────────────┬──────────────────────┘    │
+   │                 ↓                            │
+   │  ┌─────────────────────────────────────┐    │
+   │  │  6. Predictions & Classifications   │    │
+   │  │     - Artifact lifecycle            │    │
+   │  │     - Conversation clustering       │    │
+   │  │     - Fragment linking              │    │
+   │  └──────────────────────────────────────┘   │
+   └──────────────────┬───────────────────────────┘
+                      ↓
+           ┌───────────────────────┐
+           │  Virtuoso + SPARQL    │
+           │  (RDF triple store)   │
+           └───────────────────────┘
+                      ↓
+           ┌───────────────────────┐
+           │  ReScript Frontend    │
+           │  (Visualization)      │
+           └───────────────────────┘
+----
+
+=== Integration Patterns
+
+==== Elixir → Julia Communication
+
+*Recommended*: **Ports** for process communication.
+
+[source,elixir]
+----
+# Elixir orchestrator
+defmodule Anamnesis.JuliaInterface do
+  def call_reservoir_training(data) do
+    port = Port.open({:spawn, "julia reservoir_training.jl"}, [:binary])
+    Port.command(port, Jason.encode!(data))
+    receive do
+      {^port, {:data, result}} -> Jason.decode!(result)
+    end
+  end
+end
+----
+
+[source,julia]
+----
+# Julia script (reservoir_training.jl)
+using JSON3
+using ReservoirComputing
+
+# Read from stdin
+input = JSON3.read(stdin)
+data = input["data"]
+
+# Process
+esn = ESN(...)
+output_layer = train(esn, data)
+prediction = esn(Predictive(), test_data, output_layer)
+
+# Write to stdout
+result = Dict("prediction" => prediction)
+println(JSON3.write(result))
+----
+
+*Alternative*: **PyCall-like Julia package** (if exists) or **HTTP API** (Julia server).
+
+==== λProlog → Julia (Rules)
+
+Extract rules from λProlog, pass to Julia for KBANN encoding.
+
+[source,text]
+----
+λProlog output (term format):
+  rule(and(artifact_created(A), time_before(T1, T2)),
+       artifact_modifiable(A, T2)).
+
+Julia parsing:
+  Parse term → Internal Rule structure → KBANN encoding
+----
+
+=== Workflow Example: Artifact Lifecycle Prediction
+
+[source,text]
+----
+1. OCaml parses conversation JSON → Artifacts + timestamps
+
+2. Elixir orchestrator:
+   - Sends to Virtuoso (RDF triples)
+   - Queries λProlog for rules (e.g., "created before modified")
+   - Calls Julia processing
+
+3. Julia:
+   a. SPARQL query → Build MetaGraph of artifacts
+   b. GraphNeuralNetworks.jl → Node embeddings
+   c. Extract time series of embeddings (artifact evolution)
+   d. KBANN: Encode λProlog rules as network initialization
+   e. ReservoirComputing.jl: Train hybrid reservoir
+      - Knowledge-initialized structure
+      - Data-driven refinement
+   f. Predict: Next artifact state (created/modified/removed)
+
+4. Export predictions:
+   - RDF triples → Virtuoso
+   - JSON → ReScript frontend visualization
+
+5. Feedback:
+   - Update λProlog rules based on prediction errors
+   - Iterative refinement
+----
+
+== Code Examples and Patterns
+
+=== Complete ESN Example for Conversation Embeddings
+
+[source,julia]
+----
+using ReservoirComputing
+using LinearAlgebra
+using Statistics
+
+"""
+Train ESN on conversation embedding time series to predict
+next conversation state or classify conversation type.
+"""
+
+function train_conversation_esn(
+    embedding_series::Matrix{Float64},  # (embedding_dim, timesteps)
+    labels::Vector{Int},                # Conversation labels
+    reservoir_size::Int=500
+)
+    # 1. Create reservoir
+    reservoir = RandSparseReservoir(
+        reservoir_size,
+        radius=1.1,        # Spectral radius
+        sparsity=0.1,      # 10% connectivity
+        activation=tanh
+    )
+
+    # 2. Input layer
+    input_layer = DenseLayer()
+
+    # 3. Readout with regularization
+    readout = StandardRidge(ridge_parameter=1e-5)
+
+    # 4. Create ESN
+    esn = ESN(
+        reservoir,
+        input_layer=input_layer,
+        readout=readout,
+        reservoir_driver=RNN(),
+        washout=100  # Discard initial transient states
+    )
+
+    # 5. Train
+    # Note: labels should be one-hot encoded or numerical targets
+    output_layer = train(esn, embedding_series, labels)
+
+    return esn, output_layer
+end
+
+# Usage
+# embeddings = get_conversation_embeddings()  # (dim, timesteps)
+# labels = get_conversation_labels()
+# esn, output_layer = train_conversation_esn(embeddings, labels)
+
+# Prediction
+# new_embeddings = get_new_conversation_embeddings()
+# predicted = esn(Predictive(), new_embeddings, output_layer)
+----
+
+=== KBANN Prototype in Flux.jl
+
+[source,julia]
+----
+using Flux
+
+"""
+Simplified KBANN: Encode propositional rules as network initialization.
+
+Example rule: IF feature1 AND feature2 THEN class1
+Encoding:
+  - Positive literal (feature1) → +W
+  - Negative literal (¬feature2) → -W
+  - Threshold based on conjunction
+"""
+
+struct Rule
+    antecedents::Vector{Int}  # Indices of input features
+    negated::Vector{Bool}     # True if literal is negated
+    consequent::Int           # Output class
+end
+
+function encode_kbann(rules::Vector{Rule}, n_inputs::Int, n_outputs::Int)
+    n_rules = length(rules)
+    n_hidden = n_rules + 10  # Extra untrained units
+
+    # Initialize weights
+    W_init = 4.0  # Weight magnitude (tunable)
+
+    # Hidden layer weights (rules)
+    W1 = zeros(Float32, n_hidden, n_inputs)
+    b1 = zeros(Float32, n_hidden)
+
+    for (i, rule) in enumerate(rules)
+        for (j, feat_idx) in enumerate(rule.antecedents)
+            # Positive literal: +W, Negative: -W
+            W1[i, feat_idx] = rule.negated[j] ? -W_init : W_init
+        end
+
+        # Threshold: Need all antecedents active
+        # For AND: threshold = (n_antecedents - 0.5) * W_init
+        b1[i] = -(length(rule.antecedents) - 0.5) * W_init
+    end
+
+    # Extra untrained units (randomly initialized)
+    W1[n_rules+1:end, :] = randn(Float32, 10, n_inputs) * 0.1
+    b1[n_rules+1:end] = randn(Float32, 10) * 0.1
+
+    # Output layer (trained from scratch)
+    W2 = randn(Float32, n_outputs, n_hidden) * 0.1
+    b2 = zeros(Float32, n_outputs)
+
+    # Create model
+    model = Chain(
+        Dense(W1, b1, σ),
+        Dense(W2, b2, identity)
+    )
+
+    return model
+end
+
+# Example usage
+rules = [
+    Rule([1, 2], [false, false], 1),  # feat1 AND feat2 → class1
+    Rule([3], [true], 2),              # ¬feat3 → class2
+]
+
+model = encode_kbann(rules, n_inputs=10, n_outputs=3)
+
+# Train with Flux
+loss(x, y) = Flux.logitcrossentropy(model(x), y)
+optimizer = Flux.Adam(0.001)
+
+# training_data = [(x1, y1), (x2, y2), ...]
+# Flux.train!(loss, Flux.params(model), training_data, optimizer)
+----
+
+=== RDF to MetaGraph Conversion
+
+[source,julia]
+----
+using MetaGraphs
+using Graphs
+using HTTP
+using JSON3
+
+"""
+Convert RDF triples from SPARQL query to MetaGraph.
+"""
+
+function sparql_to_metagraph(endpoint::String, query::String)
+    # Query SPARQL endpoint
+    response = HTTP.post(
+        endpoint,
+        ["Content-Type" => "application/sparql-query",
+         "Accept" => "application/json"],
+        query
+    )
+
+    results = JSON3.read(response.body)
+    bindings = results["results"]["bindings"]
+
+    # Create metagraph
+    mg = MetaDiGraph()
+    uri_to_vertex = Dict{String, Int}()
+    vertex_counter = 0
+
+    # Helper: Get or create vertex for URI
+    function get_vertex(uri::String)
+        if !haskey(uri_to_vertex, uri)
+            vertex_counter += 1
+            add_vertex!(mg)
+            uri_to_vertex[uri] = vertex_counter
+            set_prop!(mg, vertex_counter, :uri, uri)
+        end
+        return uri_to_vertex[uri]
+    end
+
+    # Process triples
+    for binding in bindings
+        subj = binding["subject"]["value"]
+        pred = binding["predicate"]["value"]
+        obj = binding["object"]["value"]
+
+        v_subj = get_vertex(subj)
+        v_obj = get_vertex(obj)
+
+        # Add edge with predicate as property
+        add_edge!(mg, v_subj, v_obj)
+        set_prop!(mg, Edge(v_subj, v_obj), :predicate, pred)
+    end
+
+    return mg, uri_to_vertex
+end
+
+# Example usage
+endpoint = "http://localhost:8890/sparql"
+query = """
+SELECT ?subject ?predicate ?object
+WHERE {
+    ?subject ?predicate ?object .
+    FILTER(STRSTARTS(STR(?subject), "http://anamnesis.org/"))
+}
+LIMIT 1000
+"""
+
+mg, uri_map = sparql_to_metagraph(endpoint, query)
+
+# Access properties
+println("Number of entities: ", nv(mg))
+println("Number of relationships: ", ne(mg))
+
+# Get entity URI
+entity_uri = get_prop(mg, 1, :uri)
+----
+
+=== Graph Embeddings for Reservoir Input
+
+[source,julia]
+----
+using GraphNeuralNetworks
+using Flux
+using Graphs
+using MetaGraphs
+
+"""
+Generate node embeddings from MetaGraph using GNN,
+then create time series for reservoir computing.
+"""
+
+function metagraph_to_embeddings(mg::MetaDiGraph, embedding_dim::Int=64)
+    # Convert to simple graph for GNN
+    g = SimpleDiGraph(nv(mg))
+    for e in edges(mg)
+        add_edge!(g, src(e), dst(e))
+    end
+
+    # Initialize node features (one-hot encoding or random)
+    n_nodes = nv(g)
+    x = rand(Float32, embedding_dim, n_nodes)
+
+    # Define GNN
+    gnn = GNNChain(
+        GCNConv(embedding_dim => 128),
+        relu,
+        GCNConv(128 => 64),
+        relu,
+        GCNConv(64 => embedding_dim)
+    )
+
+    # Compute embeddings
+    embeddings = gnn(g, x)  # (embedding_dim, n_nodes)
+
+    return embeddings
+end
+
+function temporal_graph_embeddings(
+    sparql_endpoint::String,
+    query_template::Function,  # t → SPARQL query at time t
+    time_steps::Int
+)
+    embedding_series = []
+
+    for t in 1:time_steps
+        query = query_template(t)
+        mg, _ = sparql_to_metagraph(sparql_endpoint, query)
+
+        embeddings = metagraph_to_embeddings(mg)
+
+        # Aggregate to single vector (graph-level)
+        graph_embedding = mean(embeddings, dims=2)
+
+        push!(embedding_series, graph_embedding)
+    end
+
+    # Convert to matrix (embedding_dim, time_steps)
+    return hcat(embedding_series...)
+end
+
+# Usage with reservoir
+# query_fn(t) = "SELECT ... WHERE { ... FILTER(?time < $t) }"
+# embeddings = temporal_graph_embeddings(endpoint, query_fn, 1000)
+# esn, output_layer = train_conversation_esn(embeddings, labels)
+----
+
+=== Hybrid Knowledge-Augmented Reservoir
+
+[source,julia]
+----
+using ReservoirComputing
+using SparseArrays
+using LinearAlgebra
+
+"""
+Create reservoir with structured sub-network based on knowledge,
+combined with random sub-network for data-driven learning.
+"""
+
+function create_knowledge_augmented_reservoir(
+    knowledge_structure::SparseMatrixCSC{Float64, Int},
+    random_size::Int,
+    total_radius::Float64=1.1
+)
+    n_knowledge = size(knowledge_structure, 1)
+    n_total = n_knowledge + random_size
+
+    # Create random sub-reservoir
+    random_reservoir = sprand(random_size, random_size, 0.1)
+    random_reservoir = random_reservoir .* 2 .- 1  # Scale to [-1, 1]
+
+    # Combine into block structure
+    #   [Knowledge  Coupling ]
+    #   [Coupling   Random   ]
+
+    W = spzeros(n_total, n_total)
+    W[1:n_knowledge, 1:n_knowledge] = knowledge_structure
+    W[n_knowledge+1:end, n_knowledge+1:end] = random_reservoir
+
+    # Add coupling between structured and random parts
+    coupling_strength = 0.1
+    coupling = sprand(n_knowledge, random_size, 0.05) .* coupling_strength
+    W[1:n_knowledge, n_knowledge+1:end] = coupling
+    W[n_knowledge+1:end, 1:n_knowledge] = coupling'
+
+    # Scale to desired spectral radius
+    eigenvals = eigvals(Matrix(W))
+    current_radius = maximum(abs.(eigenvals))
+    W = W .* (total_radius / current_radius)
+
+    return W
+end
+
+# Usage
+# knowledge_adj = build_knowledge_adjacency_matrix(rules)
+# W = create_knowledge_augmented_reservoir(knowledge_adj, 500)
+#
+# # Use in ReservoirComputing.jl (custom reservoir type)
+# # May require defining custom reservoir struct
+----
+
+== Conclusion
+
+=== Summary of Recommendations
+
+[cols="1,2,1"]
+|===
+|Priority |Recommendation |Package
+
+|**MUST USE**
+|Reservoir computing core
+|ReservoirComputing.jl
+
+|**MUST USE**
+|Graph processing
+|Graphs.jl + MetaGraphs.jl
+
+|**SHOULD USE**
+|Graph neural networks
+|GraphNeuralNetworks.jl
+
+|**SHOULD USE**
+|RDF querying
+|HTTP.jl (SPARQL)
+
+|**CONSIDER**
+|Spiking neural networks (if LSM needed)
+|SpikingNeuralNetworks.jl
+
+|**BUILD CUSTOM**
+|KBANN implementation
+|Flux.jl
+
+|**BUILD CUSTOM**
+|λProlog ↔ Julia bridge
+|Ports/NIFs
+|===
+
+=== Critical Constraints Satisfied
+
+✅ **NO PYTHON** - All packages are pure Julia +
+✅ **Performance** - Faster than Python alternatives +
+✅ **GPU Support** - CUDA.jl integration +
+✅ **Type Safety** - Julia's type system +
+✅ **Functional Paradigm** - Julia supports functional programming +
+✅ **Academic Rigor** - JMLR publication, peer-reviewed +
+✅ **Active Maintenance** - SciML ecosystem, NumFOCUS sponsored
+
+=== Next Steps for Anamnesis
+
+1. **Install ReservoirComputing.jl** and run basic ESN examples
+2. **Prototype RDF → MetaGraph** conversion with sample data
+3. **Test GraphNeuralNetworks.jl** on knowledge graph embeddings
+4. **Design KBANN prototype** in Flux.jl with propositional rules
+5. **Implement Elixir ↔ Julia** communication via ports
+6. **Benchmark performance** on proving ground (zotero-voyant-export conversations)
+
+=== Research Opportunities
+
+Anamnesis project has potential for **novel contributions**:
+
+* **KBANN + Reservoir Computing** hybrid architecture
+* **Temporal knowledge graph reasoning** with reservoir dynamics
+* **Multi-LLM conversation untangling** application domain
+* **Symbolic-neural integration** for artifact lifecycle tracking
+* **Julia implementation of KBANN** (first in ecosystem)
+
+=== References
+
+See academic papers cited throughout document, particularly:
+
+* Martinuzzi et al. (2022) - ReservoirComputing.jl
+* Towell & Shavlik (1994) - KBANN
+* Lukoševičius (2012) - ESN practical guide
+* GraphNeuralNetworks.jl paper (2024)
+
+== Appendix: Installation and Setup
+
+=== Julia Installation
+
+[source,bash]
+----
+# Install Julia 1.10+ (required for ReservoirComputing.jl)
+# Download from https://julialang.org/downloads/
+
+# Verify
+julia --version
+----
+
+=== Package Installation
+
+[source,julia]
+----
+using Pkg
+
+# Core packages
+Pkg.add("ReservoirComputing")
+Pkg.add("Graphs")
+Pkg.add("MetaGraphs")
+Pkg.add("GraphNeuralNetworks")
+Pkg.add("Flux")
+
+# Optional
+Pkg.add("CUDA")  # GPU support
+Pkg.add("RDF")
+Pkg.add("HTTP")
+Pkg.add("JSON3")
+Pkg.add("SpikingNeuralNetworks")
+
+# Utilities
+Pkg.add("Plots")
+Pkg.add("BenchmarkTools")
+Pkg.add("LinearAlgebra")
+Pkg.add("SparseArrays")
+Pkg.add("Statistics")
+----
+
+=== Quick Start
+
+[source,julia]
+----
+using ReservoirComputing
+
+# 1. Generate sample data
+data = rand(1, 1000)  # (input_dim, timesteps)
+
+# 2. Create ESN
+reservoir = RandSparseReservoir(100, radius=1.2, sparsity=0.1)
+esn = ESN(reservoir, readout=StandardRidge(1e-6))
+
+# 3. Train
+train_data = data[:, 1:800]
+output_layer = train(esn, train_data)
+
+# 4. Predict
+test_data = data[:, 801:end]
+prediction = esn(Predictive(), test_data, output_layer)
+
+# 5. Evaluate
+using Statistics
+mse = mean((prediction .- test_data).^2)
+println("MSE: $mse")
+----
+
+---
+
+*Document Version*: 1.0 +
+*Last Updated*: 2025-11-22 +
+*Anamnesis Project* +
+*Research Phase: Complete*

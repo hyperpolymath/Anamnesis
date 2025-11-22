@@ -1,0 +1,186 @@
+(* Anamnesis Conversation Types (ATD Schema)
+ * This file defines type schemas for conversation formats
+ * Generate OCaml types with: atdgen -t conversation_types.atd
+ * Generate JSON serializers with: atdgen -j conversation_types.atd
+ *)
+
+(* ==============================================================================
+ * Generic Conversation Types (normalized format)
+ * ==============================================================================
+ *)
+
+type conversation = {
+  id: string;
+  ?platform: string nullable;
+  timestamp: float;
+  messages: message list;
+  ?artifacts: artifact list nullable;
+  ?metadata: (string * string) list nullable;
+}
+
+type message = {
+  id: string;
+  speaker: speaker;
+  content: string;
+  timestamp: float;
+  ?references: string list nullable;  (* IDs of referenced artifacts/messages *)
+  ?metadata: (string * string) list nullable;
+}
+
+type speaker = [
+  | Human of string  (* human identifier or "user" *)
+  | LLM of llm_info
+]
+
+type llm_info = {
+  model: string;  (* e.g., "claude-3-5-sonnet-20241022" *)
+  ?provider: string nullable;  (* e.g., "anthropic", "openai" *)
+}
+
+type artifact = {
+  id: string;
+  ?name: string nullable;
+  artifact_type: artifact_type;
+  content: string;
+  created_in: string;  (* message ID *)
+  ?modified_in: string list nullable;  (* message IDs *)
+  current_state: lifecycle_state;
+  ?language: string nullable;  (* for code artifacts *)
+  ?metadata: (string * string) list nullable;
+}
+
+type artifact_type = [
+  | Code of string  (* language *)
+  | Documentation
+  | Configuration
+  | Other of string
+]
+
+type lifecycle_state = [
+  | Created
+  | Modified
+  | Removed
+  | Evaluated
+]
+
+(* ==============================================================================
+ * Claude-Specific Types
+ * ==============================================================================
+ *)
+
+type claude_conversation = {
+  uuid: string;
+  name: string;
+  created_at: string;  (* ISO 8601 timestamp *)
+  ?updated_at: string nullable;
+  chat_messages: claude_message list;
+}
+
+type claude_message = {
+  uuid: string;
+  text: string;
+  sender: claude_sender;
+  created_at: string;
+  ?updated_at: string nullable;
+  ?attachments: claude_attachment list nullable;
+}
+
+type claude_sender = [
+  | Human
+  | Assistant
+]
+
+type claude_attachment = {
+  file_name: string;
+  file_type: string;
+  ?file_size: int nullable;
+  ?content: string nullable;  (* base64 or text *)
+}
+
+(* ==============================================================================
+ * ChatGPT-Specific Types
+ * ==============================================================================
+ *)
+
+type chatgpt_conversation = {
+  id: string;
+  title: string;
+  create_time: float;
+  ?update_time: float nullable;
+  mapping: (string * chatgpt_node) list;  (* node_id -> node *)
+}
+
+type chatgpt_node = {
+  id: string;
+  ?message: chatgpt_message nullable;
+  ?parent: string nullable;
+  children: string list;
+}
+
+type chatgpt_message = {
+  id: string;
+  author: chatgpt_author;
+  ?content: chatgpt_content nullable;
+  ?create_time: float nullable;
+  ?metadata: (string * string) list nullable;
+}
+
+type chatgpt_author = {
+  role: chatgpt_role;
+  ?name: string nullable;
+  ?metadata: (string * string) list nullable;
+}
+
+type chatgpt_role = [
+  | System
+  | User
+  | Assistant
+  | Tool
+]
+
+type chatgpt_content = {
+  content_type: string;
+  parts: string list;
+}
+
+(* ==============================================================================
+ * Mistral-Specific Types
+ * ==============================================================================
+ *)
+
+type mistral_conversation = {
+  id: string;
+  created: int;  (* Unix timestamp *)
+  messages: mistral_message list;
+}
+
+type mistral_message = {
+  role: mistral_role;
+  content: string;
+  ?timestamp: int nullable;
+}
+
+type mistral_role = [
+  | System
+  | User
+  | Assistant
+]
+
+(* ==============================================================================
+ * Git Commit Log Types
+ * ==============================================================================
+ *)
+
+type git_log = {
+  repository: string;
+  commits: git_commit list;
+}
+
+type git_commit = {
+  hash: string;
+  author: string;
+  email: string;
+  timestamp: int;  (* Unix timestamp *)
+  message: string;
+  ?files_changed: string list nullable;
+}

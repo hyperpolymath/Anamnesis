@@ -1,0 +1,73 @@
+% Fuzzy Multi-Category Membership
+% Conversations can belong to multiple projects with varying strengths
+
+kind conversation type.
+kind category type.
+kind membership_type type.
+
+type primary, secondary, tangential membership_type.
+
+% Membership relation
+type belongs_to conversation -> category -> membership_type -> prop.
+type membership_strength membership_type -> float -> prop.
+type fuzzy_score conversation -> category -> float -> prop.
+type total_membership conversation -> float -> prop.
+type normalized_membership conversation -> category -> float -> prop.
+
+% Define strength values for each membership type
+membership_strength primary 1.0.
+membership_strength secondary 0.6.
+membership_strength tangential 0.3.
+
+% Compute fuzzy membership score for a conversation in a category
+fuzzy_score Conv Cat Score :-
+    belongs_to Conv Cat MType,
+    membership_strength MType Score.
+
+% Total membership strength across all categories
+total_membership Conv Total :-
+    findall Score (fuzzy_score Conv _ Score) Scores,
+    sum_list Scores Total.
+
+% Normalized membership (sum to 1.0)
+normalized_membership Conv Cat NormScore :-
+    fuzzy_score Conv Cat Score,
+    total_membership Conv Total,
+    Total > 0.0,
+    NormScore is Score / Total.
+
+% Primary category (highest membership)
+primary_category Conv Cat :-
+    belongs_to Conv Cat primary.
+
+% All categories for a conversation
+categories_for Conv Cats :-
+    findall Cat (belongs_to Conv Cat _) Cats.
+
+% Check if conversation is multi-category
+is_multi_category Conv :-
+    categories_for Conv Cats,
+    length Cats Len,
+    Len > 1.
+
+% Example data
+belongs_to "conv-001" "anamnesis" primary.
+belongs_to "conv-001" "rescript-evangeliser" tangential.
+
+belongs_to "conv-002" "anamnesis" secondary.
+belongs_to "conv-002" "zotero-nsai" primary.
+
+belongs_to "conv-003" "anamnesis" primary.
+
+% Queries:
+% ?- fuzzy_score "conv-001" "anamnesis" Score.
+% Score = 1.0
+
+% ?- normalized_membership "conv-001" "anamnesis" NormScore.
+% NormScore = 0.769...  (1.0 / (1.0 + 0.3))
+
+% ?- is_multi_category "conv-001".
+% Yes
+
+% ?- primary_category "conv-002" Cat.
+% Cat = "zotero-nsai"
