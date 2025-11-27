@@ -2,17 +2,17 @@
 # https://securitytxt.org/
 
 Contact: mailto:[SECURITY_EMAIL_TO_BE_ADDED]
-Contact: https://github.com/Hyperpolymath/convesation-spaghetti/security/advisories
+Contact: https://github.com/Hyperpolymath/anamnesis/security/advisories
 Expires: 2026-11-22T00:00:00.000Z
 Preferred-Languages: en
-Canonical: https://raw.githubusercontent.com/Hyperpolymath/convesation-spaghetti/main/.well-known/security.txt
+Canonical: https://raw.githubusercontent.com/Hyperpolymath/anamnesis/main/.well-known/security.txt
 
 # Encryption: [GPG_KEY_URL_TO_BE_ADDED]
 
-Policy: https://github.com/Hyperpolymath/convesation-spaghetti/blob/main/SECURITY.md
-Acknowledgments: https://github.com/Hyperpolymath/convesation-spaghetti/blob/main/SECURITY.md#hall-of-fame
+Policy: https://github.com/Hyperpolymath/anamnesis/blob/main/SECURITY.md
+Acknowledgments: https://github.com/Hyperpolymath/anamnesis/blob/main/SECURITY.md#hall-of-fame
 
-# Hiring: https://github.com/Hyperpolymath/convesation-spaghetti/blob/main/CONTRIBUTING.md
+# Hiring: https://github.com/Hyperpolymath/anamnesis/blob/main/CONTRIBUTING.md
 
 # Please report security vulnerabilities privately.
 # Do NOT open public GitHub issues for security bugs.

@@ -4,7 +4,7 @@
 
 (generate_opam_files true)
 
-(source (github Hyperpolymath/convesation-spaghetti))
+(source (github Hyperpolymath/anamnesis))
 (authors "Hyperpolymath")
 (maintainers "Hyperpolymath")
 (license "TBD")

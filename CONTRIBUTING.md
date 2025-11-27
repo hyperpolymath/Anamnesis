@@ -111,8 +111,8 @@ We'll move to **Perimeter 3 (Community Sandbox)** when:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Hyperpolymath/convesation-spaghetti.git
-cd convesation-spaghetti
+git clone https://github.com/Hyperpolymath/anamnesis.git
+cd anamnesis
 
 # Setup component dependencies
 just setup-all  # Runs setup for all components

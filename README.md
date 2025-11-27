@@ -329,7 +329,7 @@ To be determined.
 
 ## Resources
 
-- Repository: https://github.com/Hyperpolymath/convesation-spaghetti
+- Repository: https://github.com/Hyperpolymath/anamnesis
 - Test Case: zotero-voyant-export (to be copied to proving-ground)
 - Handover Docs: `zotero-voyant-export/docs/contamination-notice/`
   - ANAMNESIS_HANDOVER_MINIMAL.adoc

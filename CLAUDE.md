@@ -144,7 +144,7 @@ Relevant concepts to user's research/journalism work:
 
 ## Resources
 
-- Repository: https://github.com/Hyperpolymath/convesation-spaghetti
+- Repository: https://github.com/Hyperpolymath/anamnesis
 - Test Case Repo: zotero-voyant-export (contaminated, needs untangling)
 - Branch: `claude/create-claude-md-018rbEkfj7wratJi4wojmi1N`
 

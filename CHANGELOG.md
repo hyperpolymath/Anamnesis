@@ -153,5 +153,5 @@ For more information, see [CONTRIBUTING.md](CONTRIBUTING.md).
 - ⚠️ Deprecated feature
 
 **Links**:
-- [Unreleased]: https://github.com/Hyperpolymath/convesation-spaghetti/compare/v0.1.0-alpha...HEAD
-- [0.1.0-alpha]: https://github.com/Hyperpolymath/convesation-spaghetti/releases/tag/v0.1.0-alpha
+- [Unreleased]: https://github.com/Hyperpolymath/anamnesis/compare/v0.1.0-alpha...HEAD
+- [0.1.0-alpha]: https://github.com/Hyperpolymath/anamnesis/releases/tag/v0.1.0-alpha

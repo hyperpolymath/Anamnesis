@@ -121,7 +121,7 @@ Post-1.0.0: We may establish a funded bug bounty program.
 ## Security Advisories
 
 Published at:
-- **GitHub**: https://github.com/Hyperpolymath/convesation-spaghetti/security/advisories
+- **GitHub**: https://github.com/Hyperpolymath/anamnesis/security/advisories
 - **.well-known/security.txt**: RFC 9116 compliant
 
 Subscribe to:

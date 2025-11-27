@@ -46,8 +46,8 @@ On a connected machine, download all dependencies:
 
 ```bash
 # Clone repository
-git clone https://github.com/Hyperpolymath/convesation-spaghetti.git
-cd convesation-spaghetti
+git clone https://github.com/Hyperpolymath/anamnesis.git
+cd anamnesis
 
 # Download OCaml dependencies
 cd parser
@@ -92,7 +92,7 @@ scp anamnesis-offline-bundle.tar.gz airgap-host:/opt/
 # Extract bundle
 cd /opt
 tar -xzf anamnesis-offline-bundle.tar.gz
-cd convesation-spaghetti
+cd anamnesis
 
 # Setup OCaml (use cached packages)
 export OPAMDOWNLOADJOBS=0  # Prevent network access

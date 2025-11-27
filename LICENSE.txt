@@ -153,6 +153,6 @@ END OF LICENSE
 
 For questions about licensing, contact:
 - Email: [To be added by maintainer]
-- GitHub Issues: https://github.com/Hyperpolymath/convesation-spaghetti/issues
+- GitHub Issues: https://github.com/Hyperpolymath/anamnesis/issues
 
 SPDX-License-Identifier: MIT OR Palimpsest-0.8

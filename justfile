@@ -326,7 +326,7 @@ info:
 
 # Open project in browser
 open-repo:
-    @open https://github.com/Hyperpolymath/convesation-spaghetti || xdg-open https://github.com/Hyperpolymath/convesation-spaghetti || echo "Open manually: https://github.com/Hyperpolymath/convesation-spaghetti"
+    @open https://github.com/Hyperpolymath/anamnesis || xdg-open https://github.com/Hyperpolymath/anamnesis || echo "Open manually: https://github.com/Hyperpolymath/anamnesis"
 
 # ============================================================================
 # Help & Documentation

@@ -10,7 +10,7 @@
 
 # 1. ATTRIBUTION REQUIRED
 #    - Must credit "Anamnesis Project" and original authors
-#    - Include link to https://github.com/Hyperpolymath/convesation-spaghetti
+#    - Include link to https://github.com/Hyperpolymath/anamnesis
 #    - Preserve license information (MIT OR Palimpsest-0.8)
 
 # 2. RESEARCH & EDUCATION: ✅ PERMITTED
@@ -98,7 +98,7 @@
 
 # Questions about AI training use?
 #   Email: [AI_POLICY_EMAIL_TO_BE_ADDED]
-#   GitHub: https://github.com/Hyperpolymath/convesation-spaghetti/discussions
+#   GitHub: https://github.com/Hyperpolymath/anamnesis/discussions
 
 # Report misuse or attribution violations:
 #   Email: [SECURITY_EMAIL_TO_BE_ADDED]

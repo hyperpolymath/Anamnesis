@@ -112,8 +112,8 @@
 # ============================================================================
 
 # Main Repository:
-    URL: https://github.com/Hyperpolymath/convesation-spaghetti
-    Clone: git clone https://github.com/Hyperpolymath/convesation-spaghetti.git
+    URL: https://github.com/Hyperpolymath/anamnesis
+    Clone: git clone https://github.com/Hyperpolymath/anamnesis.git
     Branch: main (stable), develop (active development)
 
 # Documentation:
@@ -122,8 +122,8 @@
     Component Guides: */README.md in each subdirectory
 
 # Issue Tracker:
-    GitHub Issues: https://github.com/Hyperpolymath/convesation-spaghetti/issues
-    Discussions: https://github.com/Hyperpolymath/convesation-spaghetti/discussions
+    GitHub Issues: https://github.com/Hyperpolymath/anamnesis/issues
+    Discussions: https://github.com/Hyperpolymath/anamnesis/discussions
 
 # CI/CD:
     GitLab CI: .gitlab-ci.yml
@@ -177,7 +177,7 @@
 
 # General Inquiries:
     Email: [CONTACT_EMAIL_TO_BE_ADDED]
-    GitHub Discussions: https://github.com/Hyperpolymath/convesation-spaghetti/discussions
+    GitHub Discussions: https://github.com/Hyperpolymath/anamnesis/discussions
 
 # Security Reports:
     Email: [SECURITY_EMAIL_TO_BE_ADDED]
