@@ -26,3 +26,9 @@ This repo currently uses npm but needs to be converted to Deno.
 - **REQUIRED**: Deno for JavaScript/TypeScript
 - **FORBIDDEN**: npm, npx, node_modules (after conversion)
 - **FALLBACK**: Bun only if Deno is impossible
+
+## Language Policy (RSR)
+
+- **REQUIRED**: ReScript for all JS-target code
+- **FORBIDDEN**: New TypeScript/JavaScript files
+- **ALLOWED**: Generated .res.js files
