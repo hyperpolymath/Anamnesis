@@ -3,20 +3,133 @@
 
 == Current Status
 
-Initial development phase.
+Initial implementation phase - core infrastructure scaffolded, working toward Milestone 1.
 
-== Milestones
+== Version Milestones
 
-=== v0.1.0 - Foundation
-* [ ] Core functionality
-* [ ] Basic documentation
-* [ ] CI/CD pipeline
+=== v0.1.0 - Foundation (Current)
+
+*Goal*: End-to-end pipeline for single Claude conversation
+
+==== Parser (OCaml)
+* [x] Generic conversation type system
+* [x] Claude JSON format parser
+* [x] Format auto-detection
+* [ ] ATD schema completion
+* [ ] Port protocol testing
+
+==== Orchestrator (Elixir)
+* [x] Supervision tree skeleton
+* [x] Parser port (ParserPort)
+* [x] Lambda Prolog port (LambdaPrologPort)
+* [x] Julia port (JuliaPort)
+* [x] Virtuoso client
+* [x] Ingestion pipeline
+* [ ] End-to-end integration tests
+* [ ] Error handling refinement
+
+==== Analytics (Julia)
+* [x] RDF schema definitions
+* [x] Triple serialization (N-Triples)
+* [x] SPARQL query execution
+* [x] Virtuoso insert/update
+* [x] Graph conversion (RDF → MetaGraph)
+* [x] Graph analysis functions
+* [x] Reservoir computing (ESN)
+* [x] Graph embeddings
+* [ ] KBANN implementation
+* [ ] Test fixtures and unit tests
+
+==== Reasoning (λProlog)
+* [ ] Type definitions
+* [ ] Artifact lifecycle state machine
+* [ ] ELPI integration
+* [ ] Port interface
+
+==== Visualization (ReScript)
+* [x] Domain types
+* [x] Fuzzy category color mixing
+* [ ] Graph component (Reagraph binding)
+* [ ] Timeline component
+
+=== v0.2.0 - Multi-Format Support
+
+*Goal*: Parse multiple LLM conversation formats
+
+* [ ] ChatGPT JSON parser
+* [ ] Mistral conversation parser
+* [ ] LMArena format parser
+* [ ] Auto-detection across formats
+* [ ] Format-specific artifact extraction
+
+=== v0.3.0 - Reasoning & Categorization
+
+*Goal*: λProlog reasoning for artifact tracking and categorization
+
+* [ ] Artifact lifecycle tracking
+* [ ] Contamination detection
+* [ ] Fuzzy category membership
+* [ ] Cross-conversation linking
+* [ ] Episodic memory queries
+
+=== v0.4.0 - Visualization
+
+*Goal*: Interactive exploration of conversation knowledge
+
+* [ ] Graph visualization (Reagraph)
+* [ ] Timeline view
+* [ ] Artifact lifecycle visualization
+* [ ] Category membership color mixing
+* [ ] SPARQL query interface
 
 === v1.0.0 - Stable Release
+
+*Goal*: Production-ready system
+
 * [ ] Full feature set
-* [ ] Comprehensive tests
-* [ ] Production ready
+* [ ] Comprehensive test coverage
+* [ ] Performance optimization
+* [ ] Documentation complete
+* [ ] Proving ground validation
+
+== Feature Priorities
+
+=== High Priority (Milestone 1)
+1. Complete OCaml ATD schema
+2. Test Elixir-OCaml port communication
+3. Verify Julia module imports
+4. End-to-end Claude JSON to Virtuoso pipeline
+5. Basic SPARQL query validation
+
+=== Medium Priority (Post-M1)
+1. Additional LLM format parsers
+2. λProlog artifact lifecycle module
+3. Basic graph visualization
+4. Integration tests
+
+=== Lower Priority (v1.0)
+1. KBANN implementation
+2. Advanced reservoir computing
+3. Full visualization suite
+4. Performance optimization
+
+== Technical Debt
+
+* Test placeholders in Elixir test files need proper implementations
+* Julia module imports need verification
+* OCaml dune build configuration needs completion
+* Documentation examples may need updating
 
 == Future Directions
 
-_To be determined based on community feedback._
+=== Potential v2.0 Features
+* Browser extension for live conversation capture
+* Git log integration
+* WhatsApp/LinkedIn import
+* Collaborative features
+* Export to various formats
+
+=== Research Areas
+* Advanced neurosymbolic integration
+* Category theory for knowledge representation (Catlab.jl)
+* Uncertainty quantification (Fogbinder integration)

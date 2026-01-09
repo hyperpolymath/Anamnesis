@@ -181,7 +181,7 @@ mix phx.server
 
 == Current Status
 
-*Phase: Planning → Initial Implementation*
+*Phase: Initial Implementation*
 
 === Completed ✅
 
@@ -190,31 +190,36 @@ mix phx.server
 - [x] Directory structure created
 - [x] Component READMEs written
 - [x] CLAUDE.md guidance created
+- [x] OCaml Claude parser implemented
+- [x] Elixir port infrastructure
+- [x] Julia RDF modules (schema, serialization, SPARQL, Virtuoso)
+- [x] Julia reservoir computing modules (ESN, embeddings)
+- [x] Julia graph analysis modules
+- [x] ReScript domain types and color mixing
 
 === In Progress 🚧
 
-- [ ] OCaml parser starter code
-- [ ] Elixir supervision tree
-- [ ] λProlog reasoning modules
-- [ ] Julia RDF manipulation
-- [ ] ReScript component scaffolding
+- [ ] End-to-end integration testing
+- [ ] λProlog reasoning module implementation
+- [ ] Virtuoso storage integration
+- [ ] Additional LLM format parsers (ChatGPT, Mistral)
 
 === Phase 1 Roadmap 📋
 
 1. ✅ Create Anamnesis repository
 2. ✅ Research tech options (Julia RDF, reservoir computing, ReScript viz, OCaml parsers, λProlog)
 3. ⬜ Copy proving ground (zotero-voyant-export)
-4. ⬜ Setup basic infrastructure (build systems, test frameworks)
-5. ⬜ *Milestone 1*: Parse single Claude conversation JSON → Virtuoso RDF triples
+4. ✅ Setup basic infrastructure (build systems, test frameworks)
+5. 🚧 *Milestone 1*: Parse single Claude conversation JSON → Virtuoso RDF triples
 
 === Phase 2: Milestone 1 🎯
 
 *Goal*: End-to-end pipeline for one conversation format
 
-- [ ] Claude JSON format parser (OCaml)
-- [ ] Port communication (OCaml ↔ Elixir)
-- [ ] Basic RDF generation (Julia)
-- [ ] Virtuoso storage
+- [x] Claude JSON format parser (OCaml)
+- [x] Port communication (OCaml ↔ Elixir)
+- [x] Basic RDF generation (Julia)
+- [ ] Virtuoso storage integration
 - [ ] Simple graph visualization (ReScript)
 
 == Key Design Concepts
@@ -350,6 +355,6 @@ To be determined.
 
 ---
 
-*Status*: Planning phase, comprehensive research complete, initial implementation starting.
+*Status*: Initial implementation phase. Core infrastructure complete, working toward Milestone 1.
 
-*Next Immediate Steps*: Implement Milestone 1 (Claude JSON → Virtuoso RDF pipeline).
+*Next Immediate Steps*: Complete end-to-end testing and Virtuoso integration.

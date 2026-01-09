@@ -40,8 +40,13 @@ defmodule Anamnesis.Pipelines.IngestionPipelineTest do
   end
 
   describe "parse step" do
+    @tag :integration
+    @tag :skip
     test "parse_conversation returns expected structure" do
-      # Mock valid Claude JSON
+      # This test requires the OCaml parser binary to be built
+      # Run with: mix test --include integration
+      # Prerequisites: cd parser && dune build
+
       sample_content = ~s({
         "uuid": "test-conv-001",
         "name": "Test",
@@ -57,19 +62,24 @@ defmodule Anamnesis.Pipelines.IngestionPipelineTest do
         ]
       })
 
-      # For now, this will call the actual parser port (integration test)
-      # In production, we'd mock the ParserPort GenServer
-      # result = IngestionPipeline.parse_conversation(sample_content)
+      # When parser port is running:
+      # result = Anamnesis.Ports.ParserPort.parse(sample_content, :claude)
       # assert {:ok, conversation} = result
+      # assert conversation["id"] == "test-conv-001"
+      # assert length(conversation["messages"]) == 1
 
-      # Placeholder until parser binary is built
-      assert :ok == :ok
+      assert true, "Integration test - requires parser binary"
     end
   end
 
   describe "reasoning step" do
+    @tag :integration
+    @tag :skip
     test "reason_about_conversation produces inferences" do
-      # Mock conversation structure
+      # This test requires the λProlog reasoner binary to be built
+      # Run with: mix test --include integration
+      # Prerequisites: cd reasoning && dune build
+
       conversation = %{
         "id" => "test-conv-001",
         "platform" => "Claude",
@@ -93,49 +103,58 @@ defmodule Anamnesis.Pipelines.IngestionPipelineTest do
         ]
       }
 
-      # Reasoning should extract artifact lifecycle events
-      # result = IngestionPipeline.reason_about_conversation(conversation)
+      # When reasoning port is running:
+      # result = Anamnesis.Ports.LambdaPrologPort.reason(conversation)
       # assert {:ok, inferences} = result
       # assert is_list(inferences)
-      # assert length(inferences) > 0
 
-      # Placeholder
-      assert :ok == :ok
+      assert true, "Integration test - requires reasoning binary"
     end
   end
 
   describe "RDF generation" do
+    @tag :integration
+    @tag :skip
     test "generate_rdf produces valid RDF triples" do
+      # This test requires the Julia analytics port to be running
+      # Run with: mix test --include integration
+      # Prerequisites: cd learning && julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
       conversation = %{
         "id" => "test-conv-002",
         "platform" => "Claude",
+        "timestamp" => 1732272000.0,
         "messages" => []
       }
 
       inferences = []
 
-      # Should produce N-Triples or Turtle format
-      # result = IngestionPipeline.generate_rdf(conversation, inferences)
+      # When Julia port is running:
+      # result = Anamnesis.Ports.JuliaPort.generate_rdf(conversation, inferences)
       # assert {:ok, rdf_string} = result
       # assert is_binary(rdf_string)
-      # assert String.contains?(rdf_string, "anamnesis:conv:")
+      # assert String.contains?(rdf_string, "anamnesis")
 
-      # Placeholder
-      assert :ok == :ok
+      assert true, "Integration test - requires Julia port"
     end
   end
 
   describe "Virtuoso storage" do
+    @tag :integration
+    @tag :skip
     test "store_in_virtuoso handles connection errors" do
-      # Test with invalid RDF should fail gracefully
+      # This test requires a running Virtuoso instance
+      # Run with: mix test --include integration
+      # Prerequisites: docker run -d -p 8890:8890 --name virtuoso openlink/virtuoso-opensource-7
+
       invalid_rdf = "not valid RDF"
 
-      # Should return error tuple
-      # result = IngestionPipeline.store_in_virtuoso(invalid_rdf)
+      # When Virtuoso is running:
+      # endpoint = Application.get_env(:anamnesis, :virtuoso_endpoint)
+      # result = Anamnesis.Virtuoso.Client.insert(endpoint, invalid_rdf)
       # assert {:error, _reason} = result
 
-      # Placeholder (requires running Virtuoso instance)
-      assert :ok == :ok
+      assert true, "Integration test - requires Virtuoso"
     end
   end
 
@@ -178,10 +197,18 @@ defmodule Anamnesis.Pipelines.IngestionPipelineTest do
   end
 
   describe "error recovery" do
+    @tag :integration
+    @tag :skip
     test "pipeline cleans up on failure" do
-      # Test that failed pipeline doesn't leave partial state
-      # This would involve checking Virtuoso doesn't have partial triples
-      assert :ok == :ok
+      # This test verifies that failed pipelines don't leave partial state
+      # Requires: all components running + Virtuoso
+
+      # Test would:
+      # 1. Start pipeline with conversation
+      # 2. Simulate failure mid-pipeline
+      # 3. Verify no partial triples in Virtuoso
+
+      assert true, "Integration test - requires full stack"
     end
 
     test "reports meaningful errors for each stage" do

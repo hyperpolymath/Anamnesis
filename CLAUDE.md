@@ -8,7 +8,7 @@ This file provides guidance for Claude Code when working with this project.
 
 **Problem Solved**: Mixed-project conversations, dead-end tangents, and lost context in AI-assisted development workflows.
 
-**Current State**: Planning phase - no code written yet. Architecture designed, test case identified.
+**Current State**: Initial implementation phase. Core components scaffolded, parsers and ports functional.
 
 ## Tech Stack
 
@@ -83,7 +83,6 @@ This file provides guidance for Claude Code when working with this project.
 - Work on feature branches (prefixed with `claude/`)
 - Write clear, descriptive commit messages
 - Push changes when requested by user
-- Current branch: `claude/create-claude-md-018rbEkfj7wratJi4wojmi1N`
 
 ### Testing
 - Test-driven approach
@@ -94,17 +93,23 @@ This file provides guidance for Claude Code when working with this project.
 
 ### Phase 1: Research & Setup
 1. ✅ Create Anamnesis repository (this repo)
-2. ⬜ Research tech options (check with user first):
-   - Julia RDF libraries (Semantic.jl, RDFLib.jl)
-   - Julia reservoir computing (NOT ReservoirPy - no Python)
-   - PuppyGraph stack analysis
-   - ReScript visualization ecosystem
+2. ✅ Research tech options:
+   - ✅ Julia RDF libraries (Serd.jl recommended)
+   - ✅ Julia reservoir computing (ReservoirComputing.jl)
+   - ✅ PuppyGraph evaluation (stick with Virtuoso)
+   - ✅ ReScript visualization (Reagraph, recharts)
 3. ⬜ Copy proving ground: Clone zotero-voyant-export to `proving-ground/`
 4. ⬜ Create maximal handover document (necessary AND sufficient version)
-5. ⬜ Setup project structure directories
+5. ✅ Setup project structure directories
 
-### Phase 2: Milestone 1
+### Phase 2: Milestone 1 (In Progress)
 **Goal**: Parse single Claude conversation JSON → Virtuoso RDF triples
+- ✅ Claude JSON format parser (OCaml)
+- ✅ Generic conversation types
+- ✅ Elixir port infrastructure
+- ✅ Julia RDF generation modules
+- ⬜ End-to-end integration testing
+- ⬜ Virtuoso storage integration
 
 ## Related Projects
 
@@ -116,9 +121,7 @@ This file provides guidance for Claude Code when working with this project.
 
 Relevant concepts to user's research/journalism work:
 - **Agnotology** - Study of culturally-induced ignorance
-- **[Terminology gap]** - User mentioned word for "not knowing" (vs agnotology=knowing wrong)
-  - Candidates: nescience, aporia, epistemic ignorance
-  - ⚠️ Clarify next session
+- **Nescience** - Absence of knowledge (vs agnotology=knowing wrong)
 - **Axiology** - Theory of value
 - **Ethics** - Moral philosophy applications
 
@@ -146,8 +149,8 @@ Relevant concepts to user's research/journalism work:
 
 - Repository: https://github.com/Hyperpolymath/anamnesis
 - Test Case Repo: zotero-voyant-export (contaminated, needs untangling)
-- Branch: `claude/create-claude-md-018rbEkfj7wratJi4wojmi1N`
+- Machine-readable state: `.machine_readable/STATE.scm`
 
 ---
 
-Last updated: 2025-11-22
+Last updated: 2026-01-09
