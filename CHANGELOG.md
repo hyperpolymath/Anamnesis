@@ -1,0 +1,157 @@
+# Changelog
+
+All notable changes to the Anamnesis project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Comprehensive RSR (Rhodium Standard Repository) compliance
+  - LICENSE.txt (dual MIT + Palimpsest v0.8)
+  - SECURITY.md with vulnerability reporting
+  - CONTRIBUTING.md with TPCF Perimeter 2 classification
+  - CODE_OF_CONDUCT.md based on CCCP principles
+  - MAINTAINERS.md with team structure
+  - .well-known/ directory (security.txt RFC 9116, ai.txt, humans.txt)
+- RSR compliance audit document (docs/RSR_COMPLIANCE_AUDIT.md)
+
+## [0.1.0-alpha] - 2025-11-22
+
+### Added
+
+#### Project Foundation
+- Initial repository structure and organization
+- CLAUDE.md with comprehensive project guidance
+- README.md with project overview and getting started guide
+- Complete multi-language component structure (parser, orchestrator, reasoning, learning, visualization)
+
+#### Research & Architecture
+- 6 comprehensive research reports (AsciiDoc format):
+  - Julia RDF Ecosystem Analysis (Serd.jl, SPARQL via HTTP.jl)
+  - Julia Reservoir Computing Survey (ReservoirComputing.jl, KBANN)
+  - PuppyGraph Evaluation (recommendation: stick with Virtuoso)
+  - ReScript Visualization Ecosystem (Reagraph, rescript-recharts)
+  - OCaml Parsing & Elixir Bridge (Angstrom, ports over NIFs)
+  - λProlog/ELPI Meta-Reasoning (HOAS, integration patterns)
+- System architecture document (docs/architecture/system-architecture.adoc, 50+ sections)
+- RDF schema/ontology (docs/specifications/rdf-schema.ttl, Turtle format)
+
+#### Parser Component (OCaml)
+- ATD schema definitions (conversation_types.atd)
+- Generic conversation module with validation and utilities
+- Claude JSON format parser with artifact extraction
+- Dune build system configuration
+- Port interface scaffolding (Erlang External Term Format via Alberto)
+
+#### Orchestrator Component (Elixir)
+- OTP application with supervision tree
+- ParserPort GenServer for OCaml communication
+- PortSupervisor for process management
+- IngestionPipeline with full parse→reason→RDF→store flow
+- Mix project configuration
+- Development and test configurations
+
+#### Reasoning Component (λProlog/ELPI)
+- Artifact lifecycle state machine (lifecycle/artifact_states.elpi)
+- Fuzzy multi-category membership logic (categorization/fuzzy_membership.elpi)
+- Contamination detection for cross-project artifacts (categorization/contamination.elpi)
+- Example queries and test data
+
+#### Learning Component (Julia)
+- Project structure with dependencies (Project.toml)
+- RDF schema constants module
+- RDF serialization (conversation → triples → N-Triples)
+- Port interface for Elixir communication
+- Module scaffolding for reservoir computing and KBANN
+
+#### Visualization Component (ReScript)
+- Type-safe domain model with phantom types (Domain.res)
+- Color mixing for fuzzy project categorization (ColorMixing.res)
+- ReScript compiler and npm configuration
+- Component scaffolding
+
+#### Documentation
+- Component-specific READMEs (parser, orchestrator, reasoning, learning, visualization)
+- Autonomous development session summary (docs/AUTONOMOUS_SESSION_SUMMARY.adoc)
+- Architecture and design documentation
+- Contribution guidelines
+
+### Technical Decisions
+- **NO PYTHON constraint** enforced throughout (Julia for scientific computing)
+- Type safety via OCaml, Elixir typespecs, ReScript, Julia type annotations
+- Functional paradigm across all components
+- Fault tolerance through OTP supervision trees and Erlang ports
+- Multi-LLM support designed from the start (stubbed complexity initially)
+- Academic rigor in documentation and research
+
+### Known Issues
+- No test infrastructure yet (planned for Phase 2)
+- Starter code only (not production-ready)
+- Some dependencies not yet installed (see component READMEs)
+- No CI/CD pipeline yet (planned)
+
+### Migration Notes
+- Project in planning phase → initial implementation
+- TPCF Perimeter 2 (Trusted Collaborators) - limited write access
+- Will migrate to Perimeter 3 (Community Sandbox) post-Milestone 1
+
+## Versioning Policy
+
+Anamnesis follows [Semantic Versioning 2.0.0](https://semver.org/):
+
+- **MAJOR.MINOR.PATCH** (e.g., 1.2.3)
+  - **MAJOR**: Breaking changes (incompatible API changes)
+  - **MINOR**: New features (backward-compatible)
+  - **PATCH**: Bug fixes (backward-compatible)
+
+**Pre-release versions**:
+- **0.y.z**: Initial development (API may change without notice)
+- **alpha**: Unstable, experimental (current phase)
+- **beta**: Feature-complete, needs testing
+- **rc**: Release candidate, stabilization
+
+**Current status**: `0.1.0-alpha` (planning phase, not production-ready)
+
+## Release Schedule
+
+**Planned Milestones**:
+
+- **Milestone 1** (Q2 2026): Parse single Claude conversation JSON → Virtuoso RDF triples
+- **Milestone 2** (Q3 2026): Multi-format parsing (ChatGPT, Mistral, Git)
+- **Milestone 3** (Q4 2026): λProlog reasoning and contamination detection
+- **1.0.0** (2027): Production-ready, stable API
+
+Actual dates subject to change based on development progress and community contributions.
+
+## How to Read This Changelog
+
+- **[Unreleased]**: Changes in development, not yet released
+- **[Version]**: Released version with date
+- **Added**: New features, files, components
+- **Changed**: Changes to existing functionality
+- **Deprecated**: Features marked for removal (will warn in next MAJOR)
+- **Removed**: Features removed (breaking change)
+- **Fixed**: Bug fixes
+- **Security**: Security fixes (always highlighted)
+
+## Contributing to Changelog
+
+When submitting a PR, update the `[Unreleased]` section with your changes in the appropriate category. Maintainers will move entries to versioned sections upon release.
+
+For more information, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+**Legend**:
+- 🎉 Major milestone
+- ⚡ Breaking change
+- 🐛 Bug fix
+- 📝 Documentation
+- 🔒 Security fix
+- ⚠️ Deprecated feature
+
+**Links**:
+- [Unreleased]: https://github.com/Hyperpolymath/anamnesis/compare/v0.1.0-alpha...HEAD
+- [0.1.0-alpha]: https://github.com/Hyperpolymath/anamnesis/releases/tag/v0.1.0-alpha
