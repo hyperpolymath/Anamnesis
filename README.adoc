@@ -1,7 +1,24 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = Anamnesis
 
 image:https://img.shields.io/badge/License-MPL--2.0-blue.svg[License: PMPL-1.0,link="https://github.com/hyperpolymath/palimpsest-license"]
 image:https://img.shields.io/badge/Philosophy-Palimpsest-indigo.svg[Palimpsest,link="https://github.com/hyperpolymath/palimpsest-license"]
+image:https://img.shields.io/badge/status-prototype-orange.svg[Prototype,link="PROTOTYPE.adoc"]
+
+[WARNING]
+====
+*Early-stage research prototype — not a product.* Interfaces and heuristics
+are experimental and may change or be abandoned. It ingests *conversation
+logs*, which often contain other people's data and secrets — only feed in
+what you have the right to process, and review outputs before sharing.
+Interest, critique and collaboration are warmly welcome. +
+See link:PROTOTYPE.adoc[*PROTOTYPE.adoc*] for the full disclaimer and how
+this connects to the ethics work —
+https://github.com/hyperpolymath/phronesiser[Phronesiser] (normative
+constraints) and https://github.com/hyperpolymath/vexometer[Vexometer]
+(interaction ethics / UX).
+====
 
 
 *A conversation knowledge extraction and reconciliation system for multi-LLM development workflows.*
