@@ -380,8 +380,6 @@ rsr:documentation-check:
 # .nix_template: &nix_template
 #   image: nixos/nix:latest
 #   before_script:
-#     - nix-env -i cachix
-#     - cachix use anamnesis
 
 # Pages deployment (static site hosting)
 # pages:
