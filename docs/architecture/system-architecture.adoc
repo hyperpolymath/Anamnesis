@@ -31,7 +31,7 @@ Anamnesis employs a multi-language, functionally-oriented architecture:
 * **λProlog reasoning** - Higher-order meta-reasoning about conversation structure
 * **Julia analytics** - RDF manipulation, reservoir computing, KBANN
 * **Virtuoso storage** - RDF triplestore with SPARQL querying
-* **ReScript visualization** - Type-safe, functional UI components
+* **AffineScript visualization** - Type-safe, functional UI components
 
 == Architectural Principles
 
@@ -54,7 +54,7 @@ Anamnesis employs a multi-language, functionally-oriented architecture:
 | Fragment references maintained across conversation boundaries
 
 | **Type safety**
-| Strong typing in OCaml, ReScript, Elixir typespecs, Julia
+| Strong typing in OCaml, AffineScript, Elixir typespecs, Julia
 
 | **Functional paradigm**
 | Immutability, pure functions, declarative transformations
@@ -110,14 +110,14 @@ Anamnesis employs a multi-language, functionally-oriented architecture:
 * **Scalability** - Handles millions of triples
 * **Federation** - Query across knowledge graphs
 
-==== ReScript for Visualization
+==== AffineScript for Visualization
 
 * **Type safety** - Compile-time guarantees, no runtime errors
 * **Functional** - Aligns with project philosophy
 * **JavaScript interop** - Excellent bindings to React ecosystem
 * **Reagraph** - WebGL graph visualization (1000-5000 nodes)
-* **rescript-recharts** - Timeline/lifecycle charts
-* **Kill JavaScript** - User goal: ReScript → native (future)
+* **affinescript-recharts** - Timeline/lifecycle charts
+* **Kill JavaScript** - User goal: AffineScript → native (future)
 
 == System Architecture
 
@@ -200,11 +200,11 @@ Anamnesis employs a multi-language, functionally-oriented architecture:
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│           Visualization Layer (ReScript + React)                │
+│           Visualization Layer (AffineScript + React)                │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐ │
 │  │ Conversation     │  │ Artifact         │  │ Project      │ │
 │  │ Graph (Reagraph) │  │ Timeline (Gantt) │  │ Category Viz │ │
-│  │ WebGL, 2D/3D     │  │ rescript-recharts│  │ Fuzzy bounds │ │
+│  │ WebGL, 2D/3D     │  │ affinescript-recharts│  │ Fuzzy bounds │ │
 │  └──────────────────┘  └──────────────────┘  └──────────────┘ │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ Interactive Features: Search, Filter, Zoom, Pan          │  │
@@ -262,9 +262,9 @@ Anamnesis employs a multi-language, functionally-oriented architecture:
 
 [source,text]
 ----
-1. User Query (ReScript UI)
+1. User Query (AffineScript UI)
    ↓
-2. [ReScript → Elixir] HTTP POST with query parameters
+2. [AffineScript → Elixir] HTTP POST with query parameters
    ↓
 3. [Elixir] Parse query, determine data needs
    ↓
@@ -272,7 +272,7 @@ Anamnesis employs a multi-language, functionally-oriented architecture:
    │  ↓
    │  [Elixir → Virtuoso] Direct SPARQL query
    │  ↓
-   │  Return results → ReScript
+   │  Return results → AffineScript
    │
    └─ Complex reasoning?
       ↓
@@ -288,9 +288,9 @@ Anamnesis employs a multi-language, functionally-oriented architecture:
       ↓
       [λProlog → Elixir] Return reasoned results
       ↓
-      [Elixir → ReScript] JSON response
+      [Elixir → AffineScript] JSON response
       ↓
-      [ReScript] Render visualization
+      [AffineScript] Render visualization
 ----
 
 ==== Reservoir Computing Pipeline (Learning Path)
@@ -323,7 +323,7 @@ Anamnesis employs a multi-language, functionally-oriented architecture:
     ↓
 11. [Julia → Virtuoso] Store predictions in graph:predictions:uuid
     ↓
-12. [ReScript UI] Visualize predictions alongside actual data
+12. [AffineScript UI] Visualize predictions alongside actual data
 ----
 
 == Detailed Component Specifications
@@ -619,7 +619,7 @@ GRAPH <anamnesis:categories:12345> {
     anamnesis:conv:12345 anamnesis:belongsTo anamnesis:proj:anamnesis ;
                          anamnesis:membershipStrength 0.8 .
 
-    anamnesis:conv:12345 anamnesis:belongsTo anamnesis:proj:rescript-evangeliser ;
+    anamnesis:conv:12345 anamnesis:belongsTo anamnesis:proj:affinescript-evangeliser ;
                          anamnesis:membershipStrength 0.3 .
 }
 ----
@@ -711,18 +711,18 @@ anamnesis:state:evaluated a anamnesis:State ;
     rdfs:label "evaluated" .
 ----
 
-=== Visualization Layer (ReScript)
+=== Visualization Layer (AffineScript)
 
 ==== Component Architecture
 
-[source,rescript]
+[source,affinescript]
 ----
 visualization/
 ├── src/
 │   ├── Anamnesis.res              (* Root module *)
 │   ├── bindings/
 │   │   ├── Reagraph.res           (* Graph visualization *)
-│   │   ├── Recharts.res           (* rescript-recharts wrapper *)
+│   │   ├── Recharts.res           (* affinescript-recharts wrapper *)
 │   │   └── SvarGantt.res          (* Timeline binding *)
 │   ├── components/
 │   │   ├── ConversationGraph.res  (* Main graph viz *)
@@ -743,7 +743,7 @@ visualization/
 
 ==== Type-Safe Graph Representation
 
-[source,rescript]
+[source,affinescript]
 ----
 module Domain = {
   type messageId = MessageId(string)
@@ -790,14 +790,14 @@ module Domain = {
 
 Color mixing based on project membership strengths:
 
-[source,rescript]
+[source,affinescript]
 ----
 module ColorMixing = {
   type rgb = {r: int, g: int, b: int}
 
   let projectColors = Map.String.fromArray([
     ("anamnesis", {r: 72, g: 187, b: 120}),      // Green
-    ("rescript-evangeliser", {r: 230, g: 74, b: 25}),  // Orange/Red
+    ("affinescript-evangeliser", {r: 230, g: 74, b: 25}),  // Orange/Red
     ("zotero-nsai", {r: 52, g: 152, b: 219}),    // Blue
   ])
 
@@ -983,7 +983,7 @@ services:
       - ./learning:/app
     command: julia --project=/app julia_port.jl
 
-  rescript:
+  affinescript:
     build: ./visualization
     ports:
       - "5173:5173"  # Vite dev server
@@ -1006,7 +1006,7 @@ Load Balancer (nginx)
     │  ├─ λProlog Port
     │  └─ Julia Port
     │
-    ├─ Static Assets (ReScript compiled JS)
+    ├─ Static Assets (AffineScript compiled JS)
     │
     └─ Virtuoso Cluster
        ├─ Primary (read/write)
@@ -1073,7 +1073,7 @@ Load Balancer (nginx)
 * Query result caching
 * Inference materialization for hot paths
 
-==== ReScript Visualization
+==== AffineScript Visualization
 
 * Virtual scrolling for large lists
 * Memoization (`React.memo`, `useMemo`)
@@ -1105,7 +1105,7 @@ Load Balancer (nginx)
 | Test.jl, Aqua.jl
 | 80%+
 
-| **ReScript UI**
+| **AffineScript UI**
 | Jest, React Testing Library
 | 75%+
 |===
@@ -1168,7 +1168,7 @@ Test on real contaminated data:
 | System compromise
 | Strict input validation, no shell execution
 
-| **ReScript XSS**
+| **AffineScript XSS**
 | Client-side exploit
 | Type-safe rendering, CSP headers
 
@@ -1226,7 +1226,7 @@ Elixir Telemetry events:
 * **Advanced reasoning** - Causal inference, counterfactual queries
 * **Export formats** - Markdown summaries, LaTeX reports, Obsidian vaults
 * **Federated knowledge graphs** - Link to external ontologies (DBpedia, Wikidata)
-* **Mobile client** - ReScript Native for iOS/Android
+* **Mobile client** - AffineScript Native for iOS/Android
 
 === Research Opportunities
 
@@ -1245,7 +1245,7 @@ The Anamnesis architecture leverages best-of-breed technologies for each layer:
 * **λProlog** for meta-reasoning with formal semantics
 * **Julia** for scientific computing without Python
 * **Virtuoso** for standards-compliant RDF storage
-* **ReScript** for type-safe, functional visualization
+* **AffineScript** for type-safe, functional visualization
 
 This multi-language approach embraces each language's strengths, connected via well-defined boundaries (Ports, HTTP, SPARQL). The result is an academically rigorous, production-ready system for extracting knowledge from tangled multi-LLM conversations.
 

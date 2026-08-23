@@ -1,4 +1,4 @@
-= ReScript Visualization Ecosystem Research
+= AffineScript Visualization Ecosystem Research
 :author: Anamnesis Project
 :revdate: 2025-11-22
 :toc: left
@@ -9,16 +9,16 @@
 
 [abstract]
 --
-Comprehensive research into the ReScript visualization ecosystem for the Anamnesis project. This document evaluates libraries, patterns, and approaches for visualizing conversation graphs, artifact lifecycles, multi-project categorization, and episodic memory structures using ReScript's type-safe functional paradigm.
+Comprehensive research into the AffineScript visualization ecosystem for the Anamnesis project. This document evaluates libraries, patterns, and approaches for visualizing conversation graphs, artifact lifecycles, multi-project categorization, and episodic memory structures using AffineScript's type-safe functional paradigm.
 --
 
 == Executive Summary
 
 === Key Findings
 
-The ReScript visualization ecosystem is *nascent but viable*. While there are limited native ReScript visualization libraries, the language's excellent JavaScript interoperability and strong type system make it well-suited for creating type-safe bindings to established React visualization libraries.
+The AffineScript visualization ecosystem is *nascent but viable*. While there are limited native AffineScript visualization libraries, the language's excellent JavaScript interoperability and strong type system make it well-suited for creating type-safe bindings to established React visualization libraries.
 
-*Recommended Approach:* Use **rescript-recharts** for standard charts and timelines, with custom bindings to **Reagraph** (WebGL graph visualization) for conversation networks. Leverage ReScript's type system to ensure visualization code correctness at compile time.
+*Recommended Approach:* Use **affinescript-recharts** for standard charts and timelines, with custom bindings to **Reagraph** (WebGL graph visualization) for conversation networks. Leverage AffineScript's type system to ensure visualization code correctness at compile time.
 
 === Recommended Stack
 
@@ -31,11 +31,11 @@ The ReScript visualization ecosystem is *nascent but viable*. While there are li
 |WebGL-based, handles 1000+ nodes, 2D/3D support, open source
 
 |Charts & Timelines
-|**rescript-recharts**
-|Mature ReScript bindings, declarative API, good for artifact lifecycles
+|**affinescript-recharts**
+|Mature AffineScript bindings, declarative API, good for artifact lifecycles
 
 |UI Framework
-|**rescript-react** + **rescript-core**
+|**affinescript-react** + **affinescript-core**
 |Official bindings, excellent type safety, functional paradigm alignment
 
 |Alternative: Large Graphs
@@ -59,17 +59,17 @@ The Anamnesis project requires visualization of:
 
 === Constraints
 
-* ✅ Type safety throughout (ReScript's strength)
+* ✅ Type safety throughout (AffineScript's strength)
 * ✅ Functional paradigm alignment
 * ✅ Performance for large conversation graphs (hundreds to thousands of nodes)
 * ✅ Academic rigor in implementation
 * ❌ NO PYTHON (not applicable to frontend)
 
-== ReScript Ecosystem Overview
+== AffineScript Ecosystem Overview
 
 === Language Characteristics
 
-ReScript is a robustly typed functional programming language that compiles to JavaScript with the following characteristics relevant to visualization:
+AffineScript is a robustly typed functional programming language that compiles to JavaScript with the following characteristics relevant to visualization:
 
 ==== Type System Benefits
 
@@ -88,11 +88,11 @@ ReScript is a robustly typed functional programming language that compiles to Ja
 
 === Current Ecosystem State (2025)
 
-**rescript-core** (Standard Library)::
-New standard library released with ReScript 11, shipped as `@rescript/core`. Fusion of `rescript-js`, `rescript-promise`, and Belt. Will be included with `rescript` package in future versions.
+**affinescript-core** (Standard Library)::
+New standard library released with AffineScript 11, shipped as `@affinescript/core`. Fusion of `affinescript-js`, `affinescript-promise`, and Belt. Will be included with `affinescript` package in future versions.
 
-**rescript-react** (React Bindings)::
-Official React bindings with excellent type safety and idiomatic ReScript patterns. Compiles closely to idiomatic JS code, making integration seamless.
+**affinescript-react** (React Bindings)::
+Official React bindings with excellent type safety and idiomatic AffineScript patterns. Compiles closely to idiomatic JS code, making integration seamless.
 
 **Package Ecosystem**::
 Limited but growing. Philosophy: leverage JavaScript ecosystem through typed bindings rather than reimplementing everything.
@@ -101,7 +101,7 @@ Limited but growing. Philosophy: leverage JavaScript ecosystem through typed bin
 
 === Recommended: Reagraph (via Custom Bindings)
 
-**Status:** JavaScript library, requires custom ReScript bindings +
+**Status:** JavaScript library, requires custom AffineScript bindings +
 **Repository:** https://github.com/reaviz/reagraph +
 **License:** Open Source +
 **Performance:** WebGL-based, handles 1000+ nodes efficiently
@@ -122,11 +122,11 @@ Reagraph uses:
 * **WebGL** for rendering (offloads to GPU)
 * **D3-force** for physics simulation
 * **React components** for declarative API
-* **TypeScript** definitions (can be translated to ReScript types)
+* **TypeScript** definitions (can be translated to AffineScript types)
 
-==== Example ReScript Binding Pattern
+==== Example AffineScript Binding Pattern
 
-[source,rescript]
+[source,affinescript]
 ----
 // External binding to Reagraph
 module Reagraph = {
@@ -232,8 +232,8 @@ let make = (~conversation: array<conversationNode>, ~edges: array<conversationEd
 
 === Alternative: D3 Direct Bindings
 
-**Status:** `rescript-d3` package exists (alpha, 4 years old) +
-**Repository:** https://www.npmjs.com/package/rescript-d3 +
+**Status:** `affinescript-d3` package exists (alpha, 4 years old) +
+**Repository:** https://www.npmjs.com/package/affinescript-d3 +
 **Recommendation:** ⚠️ *Not recommended* - maintenance concerns
 
 ==== Challenges with D3 Bindings
@@ -242,7 +242,7 @@ let make = (~conversation: array<conversationNode>, ~edges: array<conversationEd
 
 D3 API is *massive*. From research:
 
-> "Rendering code would remain in JS due to heavy usage of the D3 library. Rewriting it in ReScript would mean either adding typed bindings for every D3 function used, or using an untyped binding, which misses the whole point of migrating to ReScript (type-safety)."
+> "Rendering code would remain in JS due to heavy usage of the D3 library. Rewriting it in AffineScript would mean either adding typed bindings for every D3 function used, or using an untyped binding, which misses the whole point of migrating to AffineScript (type-safety)."
 
 ===== Better Approach
 
@@ -250,16 +250,16 @@ Use higher-level libraries (Reagraph, Graph.gl) that wrap D3 internally and expo
 
 == Charting Libraries
 
-=== Recommended: rescript-recharts
+=== Recommended: affinescript-recharts
 
-**Status:** Mature ReScript bindings +
-**Repository:** https://github.com/Minnozz/rescript-recharts +
-**NPM Packages:** `@minnozz/rescript-recharts`, `@float-capital/rescript-recharts` +
-**License:** Fork of `ahrefs/bs-recharts`, updated to new ReScript syntax
+**Status:** Mature AffineScript bindings +
+**Repository:** https://github.com/Minnozz/affinescript-recharts +
+**NPM Packages:** `@minnozz/affinescript-recharts`, `@float-capital/affinescript-recharts` +
+**License:** Fork of `ahrefs/bs-recharts`, updated to new AffineScript syntax
 
 ==== Key Features
 
-* **Declarative API** - Idiomatic ReScript/React patterns
+* **Declarative API** - Idiomatic AffineScript/React patterns
 * **Composable charts** - Bar, Line, Area, Pie, Scatter, etc.
 * **Responsive design** - ResponsiveContainer component
 * **SVG-based** - Clean, scalable rendering
@@ -267,7 +267,7 @@ Use higher-level libraries (Reagraph, Graph.gl) that wrap D3 internally and expo
 
 ==== Example: Artifact Lifecycle Timeline
 
-[source,rescript]
+[source,affinescript]
 ----
 module ArtifactTimeline = {
   type artifactEvent = {
@@ -331,7 +331,7 @@ module ArtifactTimeline = {
 
 ==== Type Safety Features
 
-[source,rescript]
+[source,affinescript]
 ----
 // Type-safe props
 type height =
@@ -382,14 +382,14 @@ For detailed artifact lifecycle Gantt charts:
 
 ===== Example Binding Sketch
 
-[source,rescript]
+[source,affinescript]
 ----
 module SvarGantt = {
   type task = {
     id: string,
     text: string,
     start: Js.Date.t,
-    end_: Js.Date.t, // 'end' is reserved in ReScript
+    end_: Js.Date.t, // 'end' is reserved in AffineScript
     progress: float, // 0.0 to 1.0
   }
 
@@ -443,21 +443,21 @@ If budget allows and open-source limitations encountered:
 
 == UI Component Libraries
 
-=== ReScript-React Foundation
+=== AffineScript-React Foundation
 
 **Status:** Official bindings, actively maintained +
-**Documentation:** https://rescript-lang.org/docs/react/latest/introduction +
+**Documentation:** https://affinescript-lang.org/docs/react/latest/introduction +
 **Maturity:** Production-ready
 
 ==== Philosophy
 
-ReScript-React compiles closely to idiomatic JavaScript, making integration with existing React ecosystems seamless. This is crucial for visualization work where you'll be mixing:
+AffineScript-React compiles closely to idiomatic JavaScript, making integration with existing React ecosystems seamless. This is crucial for visualization work where you'll be mixing:
 
-* ReScript components (type-safe logic)
+* AffineScript components (type-safe logic)
 * JavaScript visualization libraries (via bindings)
 * Standard React patterns (hooks, context, etc.)
 
-=== Native ReScript UI Libraries
+=== Native AffineScript UI Libraries
 
 ==== Ancestor (Archived)
 
@@ -478,32 +478,32 @@ Suite of layout primitives for responsive web apps:
 
 ===== Lesson
 
-ReScript UI ecosystem is *small*. Philosophy: use JavaScript libraries via bindings rather than rebuilding.
+AffineScript UI ecosystem is *small*. Philosophy: use JavaScript libraries via bindings rather than rebuilding.
 
 === Recommended Approach: JavaScript UI Libraries via Bindings
 
 ==== Chakra UI (via Custom Bindings)
 
-Mentioned in ReScript forums as recommended option.
+Mentioned in AffineScript forums as recommended option.
 
 * Component-based
 * Accessible by default
 * Themeable
-* Good TypeScript definitions (translatable to ReScript)
+* Good TypeScript definitions (translatable to AffineScript)
 
-==== Tailwind CSS (via rescript-tailwind or similar)
+==== Tailwind CSS (via affinescript-tailwind or similar)
 
 * Utility-first CSS
-* Works well with ReScript's functional approach
+* Works well with AffineScript's functional approach
 * No heavy bindings needed
 * Style composition via string interpolation or dedicated bindings
 
 ==== Material-UI (Existing Bindings)
 
-**Status:** `rescript-material-ui` package exists +
+**Status:** `affinescript-material-ui` package exists +
 **Approach:** Bindings auto-generated from MUI documentation
 
-[source,rescript]
+[source,affinescript]
 ----
 @module("@mui/material") @react.component
 external make: (
@@ -518,7 +518,7 @@ external make: (
 
 Recommended component architecture:
 
-[source,rescript]
+[source,affinescript]
 ----
 // Core layout primitives
 module Layout = {
@@ -592,11 +592,11 @@ From research on reactive data visualizations:
 
 > "Managing complex data flows and update patterns is one of the most difficult challenges in interactive data visualization."
 
-==== FRP in ReScript Context
+==== FRP in AffineScript Context
 
-While pure FRP libraries (like RxJS) aren't common in ReScript ecosystem, React's hooks provide a pragmatic reactive approach:
+While pure FRP libraries (like RxJS) aren't common in AffineScript ecosystem, React's hooks provide a pragmatic reactive approach:
 
-[source,rescript]
+[source,affinescript]
 ----
 module ConversationGraphState = {
   type filter = {
@@ -699,7 +699,7 @@ Key principles:
 
 Adapt MVC for visualization:
 
-[source,rescript]
+[source,affinescript]
 ----
 // Model: Domain data structures
 module ConversationModel = {
@@ -763,13 +763,13 @@ Visualization code is complex:
 * **Event handling** - Click, hover, drag interactions
 * **Configuration** - Chart types, colors, scales
 
-Without type safety, errors emerge at *runtime* when users interact. ReScript catches these at *compile time*.
+Without type safety, errors emerge at *runtime* when users interact. AffineScript catches these at *compile time*.
 
 === Type Safety Patterns
 
 ==== 1. Phantom Types for Units
 
-[source,rescript]
+[source,affinescript]
 ----
 // Prevent mixing up different ID types
 type rec artifactId = ArtifactId(string)
@@ -795,7 +795,7 @@ let node: node = {
 
 ==== 2. Variant Types for Configurations
 
-[source,rescript]
+[source,affinescript]
 ----
 // Type-safe chart configurations
 type chartConfig = {
@@ -819,7 +819,7 @@ let formatTimeScale = scale => {
 
 ==== 3. Result Types for Data Loading
 
-[source,rescript]
+[source,affinescript]
 ----
 module ConversationLoader = {
   type error =
@@ -865,7 +865,7 @@ module ConversationLoader = {
 
 ==== 4. Branded Types for Graph Structures
 
-[source,rescript]
+[source,affinescript]
 ----
 // Ensure graphs are always valid (no dangling edges)
 module Graph = {
@@ -970,7 +970,7 @@ Performance comparison from research:
 
 Show different detail levels based on zoom:
 
-[source,rescript]
+[source,affinescript]
 ----
 module LODGraph = {
   type zoomLevel =
@@ -1022,7 +1022,7 @@ Group related nodes to reduce visual complexity:
 
 For artifact lists/timelines with hundreds of items:
 
-[source,rescript]
+[source,affinescript]
 ----
 // Conceptual - would use react-window or similar via bindings
 module VirtualizedArtifactList = {
@@ -1056,11 +1056,11 @@ module VirtualizedArtifactList = {
 
 === Memory Management
 
-ReScript's immutability helps but monitor:
+AffineScript's immutability helps but monitor:
 
 ==== 1. Memoization
 
-[source,rescript]
+[source,affinescript]
 ----
 // Expensive graph layout calculations
 let computeLayout = React.useMemo1(
@@ -1073,7 +1073,7 @@ let computeLayout = React.useMemo1(
 
 Load conversation data incrementally:
 
-[source,rescript]
+[source,affinescript]
 ----
 type paginatedData<'a> = {
   items: array<'a>,
@@ -1097,7 +1097,7 @@ let usePaginatedConversations = (initialPage) => {
 
 ==== 3. Avoid Unnecessary Re-renders
 
-[source,rescript]
+[source,affinescript]
 ----
 // Wrap expensive visualizations in React.memo equivalent
 module ConversationGraph = {
@@ -1111,7 +1111,7 @@ module ConversationGraph = {
 
 === Performance Monitoring
 
-[source,rescript]
+[source,affinescript]
 ----
 module PerformanceMonitor = {
   let measureRender = (componentName, renderFn) => {
@@ -1138,7 +1138,7 @@ module PerformanceMonitor = {
 
 ==== 1. Node Selection
 
-[source,rescript]
+[source,affinescript]
 ----
 module InteractiveGraph = {
   type nodeSelection =
@@ -1170,9 +1170,9 @@ module InteractiveGraph = {
 
 ==== 2. Zoom & Pan
 
-Most WebGL libraries (Reagraph, Graph.gl) provide built-in zoom/pan. ReScript bindings:
+Most WebGL libraries (Reagraph, Graph.gl) provide built-in zoom/pan. AffineScript bindings:
 
-[source,rescript]
+[source,affinescript]
 ----
 module ZoomableGraph = {
   type zoomConfig = {
@@ -1202,7 +1202,7 @@ module ZoomableGraph = {
 
 ==== 3. Filtering
 
-[source,rescript]
+[source,affinescript]
 ----
 module FilterableGraph = {
   type filter = {
@@ -1259,7 +1259,7 @@ module FilterableGraph = {
 
 ==== 4. Search & Highlight
 
-[source,rescript]
+[source,affinescript]
 ----
 module SearchableGraph = {
   type searchResult = {
@@ -1324,7 +1324,7 @@ module SearchableGraph = {
 
 ==== 5. Tooltips & Context Menus
 
-[source,rescript]
+[source,affinescript]
 ----
 module TooltipGraph = {
   type tooltipState =
@@ -1380,7 +1380,7 @@ module TooltipGraph = {
 
 Centralize interaction state for complex UIs:
 
-[source,rescript]
+[source,affinescript]
 ----
 module GraphInteractionState = {
   type state = {
@@ -1414,15 +1414,15 @@ module GraphInteractionState = {
 }
 ----
 
-== Real-World ReScript Visualization Examples
+== Real-World AffineScript Visualization Examples
 
 === Community Projects
 
-From research, ReScript visualization projects are rare in public repositories. Most production ReScript is proprietary.
+From research, AffineScript visualization projects are rare in public repositories. Most production AffineScript is proprietary.
 
-==== 1. ReScript React Native SVG
+==== 1. AffineScript React Native SVG
 
-**Repository:** https://github.com/rescript-react-native/svg
+**Repository:** https://github.com/affinescript-react-native/svg
 
 Bindings for `react-native-svg`, demonstrates:
 
@@ -1432,13 +1432,13 @@ Bindings for `react-native-svg`, demonstrates:
 
 Not directly applicable to web but shows binding patterns.
 
-==== 2. rescript-recharts Examples
+==== 2. affinescript-recharts Examples
 
-**Repository:** https://github.com/Minnozz/rescript-recharts
+**Repository:** https://github.com/Minnozz/affinescript-recharts
 
 Includes working examples:
 
-[source,rescript]
+[source,affinescript]
 ----
 @react.component
 let make = (~data) => {
@@ -1459,16 +1459,16 @@ Good reference for:
 * Type-safe prop definitions
 * Variant type usage for enums
 
-==== 3. Hyperswitch (Production ReScript)
+==== 3. Hyperswitch (Production AffineScript)
 
-**Blog Post:** https://hyperswitch.io/blog/why-we-chose-rescript-over-typescript
+**Blog Post:** https://hyperswitch.io/blog/why-we-chose-affinescript-over-typescript
 
-Large-scale production ReScript application. While not primarily visualization, demonstrates:
+Large-scale production AffineScript application. While not primarily visualization, demonstrates:
 
 * Complex state management
 * Integration with JavaScript ecosystem
 * Performance at scale
-* Why companies choose ReScript over TypeScript
+* Why companies choose AffineScript over TypeScript
 
 === Learning Resources
 
@@ -1476,26 +1476,26 @@ Since examples are limited, learn from:
 
 ==== Official Documentation
 
-* **ReScript Manual** - https://rescript-lang.org/docs/manual/latest/introduction
-* **ReScript-React Docs** - https://rescript-lang.org/docs/react/latest/introduction
-* **Bindings Cookbook** - https://github.com/rescriptbr/rescript-bindings-cookbook
+* **AffineScript Manual** - https://affinescript-lang.org/docs/manual/latest/introduction
+* **AffineScript-React Docs** - https://affinescript-lang.org/docs/react/latest/introduction
+* **Bindings Cookbook** - https://github.com/rescriptbr/affinescript-bindings-cookbook
 
 ==== Migration Stories
 
-* **"Rewriting a Project in ReScript"** - https://yangdanny97.github.io/blog/2021/07/09/Migrating-to-Rescript
-* **"From TypeScript to ReScript"** - https://www.greyblake.com/blog/from-typescript-to-rescript/
+* **"Rewriting a Project in AffineScript"** - https://yangdanny97.github.io/blog/2021/07/09/Migrating-to-Rescript
+* **"From TypeScript to AffineScript"** - https://www.greyblake.com/blog/from-typescript-to-affinescript/
 
 ==== Community
 
-* **ReScript Forum** - https://forum.rescript-lang.org/
-* **ReScript Discord** - Active community for questions
-* **awesome-rescript** - https://github.com/fhammerschmidt/awesome-rescript
+* **AffineScript Forum** - https://forum.affinescript-lang.org/
+* **AffineScript Discord** - Active community for questions
+* **awesome-affinescript** - https://github.com/fhammerschmidt/awesome-affinescript
 
 === Recommended Learning Path for Anamnesis
 
-. **Master ReScript basics** - Type system, pattern matching, modules
-. **Learn rescript-react** - Hooks, components, state management
-. **Study rescript-recharts source** - Understand binding patterns
+. **Master AffineScript basics** - Type system, pattern matching, modules
+. **Learn affinescript-react** - Hooks, components, state management
+. **Study affinescript-recharts source** - Understand binding patterns
 . **Write Reagraph bindings** - Start with minimal API surface
 . **Incrementally expand** - Add bindings as needed, not upfront
 
@@ -1505,11 +1505,11 @@ Since examples are limited, learn from:
 
 [source]
 ----
-visualization/                    # ReScript visualization layer
+visualization/                    # AffineScript visualization layer
 ├── src/
 │   ├── bindings/                # JavaScript library bindings
 │   │   ├── Reagraph.res         # Graph visualization bindings
-│   │   ├── Recharts.res         # Chart bindings (use @minnozz/rescript-recharts)
+│   │   ├── Recharts.res         # Chart bindings (use @minnozz/affinescript-recharts)
 │   │   └── SvarGantt.res        # Gantt chart bindings
 │   │
 │   ├── components/              # Visualization components
@@ -1535,7 +1535,7 @@ visualization/                    # ReScript visualization layer
 │   │
 │   └── App.res                  # Main app component
 │
-├── bsconfig.json                # ReScript configuration
+├── bsconfig.json                # AffineScript configuration
 ├── package.json                 # Dependencies
 └── README.md
 ----
@@ -1552,7 +1552,7 @@ Elixir Orchestration Layer
     ↓
 JSON API
     ↓
-ReScript Visualization Layer
+AffineScript Visualization Layer
     ↓ (load)
 Raw Data (Conversation, Artifact records)
     ↓ (transform)
@@ -1569,7 +1569,7 @@ Updated Visualizations
 
 === Integration Points
 
-==== 1. Elixir ↔ ReScript
+==== 1. Elixir ↔ AffineScript
 
 Elixir serves JSON API:
 
@@ -1589,11 +1589,11 @@ defmodule AnamnesisWeb.ConversationController do
 end
 ----
 
-ReScript consumes:
+AffineScript consumes:
 
-[source,rescript]
+[source,affinescript]
 ----
-// ReScript side
+// AffineScript side
 module API = {
   type conversation = {
     id: string,
@@ -1620,7 +1620,7 @@ module API = {
 
 ==== 2. Type Synchronization
 
-Keep ReScript types in sync with Elixir schemas:
+Keep AffineScript types in sync with Elixir schemas:
 
 **Option A: Manual Maintenance**
 
@@ -1630,11 +1630,11 @@ Keep ReScript types in sync with Elixir schemas:
 **Option B: Generate from JSON Schema**
 
 * Elixir generates JSON Schema
-* Tool generates ReScript types (doesn't exist yet, would need to build)
+* Tool generates AffineScript types (doesn't exist yet, would need to build)
 
 **Option C: Runtime Validation**
 
-* Use ReScript decoders (like `@glennsl/rescript-json-combinators`)
+* Use AffineScript decoders (like `@glennsl/affinescript-json-combinators`)
 * Validate at runtime, fail gracefully
 
 Recommended: **Option C** (most practical for now)
@@ -1643,7 +1643,7 @@ Recommended: **Option C** (most practical for now)
 
 ==== Bindings (External World)
 
-[source,rescript]
+[source,affinescript]
 ----
 // Reagraph.res - External bindings only
 module Reagraph = {
@@ -1658,7 +1658,7 @@ module Reagraph = {
 
 ==== Domain Types (Business Logic)
 
-[source,rescript]
+[source,affinescript]
 ----
 // Conversation.res - Domain types
 type messageId = string
@@ -1679,7 +1679,7 @@ type conversation = {
 
 ==== Transformations (Bridge)
 
-[source,rescript]
+[source,affinescript]
 ----
 // ConversationToGraph.res - Transform domain to visualization
 let toGraphData = (conversation: conversation): Reagraph.graphData<messageId> => {
@@ -1697,7 +1697,7 @@ let toGraphData = (conversation: conversation): Reagraph.graphData<messageId> =>
 
 ==== Components (UI)
 
-[source,rescript]
+[source,affinescript]
 ----
 // ConversationGraph.res - UI component
 @react.component
@@ -1715,9 +1715,9 @@ let make = (~conversation: conversation) => {
 
 ==== 1. Type Tests
 
-ReScript's type system IS your unit tests for many cases:
+AffineScript's type system IS your unit tests for many cases:
 
-[source,rescript]
+[source,affinescript]
 ----
 // This won't compile if types are wrong
 let graph: Graph.validGraph<messageId, message, unit> =
@@ -1728,9 +1728,9 @@ let graph: Graph.validGraph<messageId, message, unit> =
 
 For React components:
 
-[source,rescript]
+[source,affinescript]
 ----
-// Use rescript-testing-library or similar
+// Use affinescript-testing-library or similar
 open ReactTestingLibrary
 
 test("renders conversation graph", () => {
@@ -1743,7 +1743,7 @@ test("renders conversation graph", () => {
 
 For transformations:
 
-[source,rescript]
+[source,affinescript]
 ----
 // All nodes in graph should come from conversation
 let testGraphNodesMatchConversation = (conversation) => {
@@ -1759,7 +1759,7 @@ let testGraphNodesMatchConversation = (conversation) => {
 
 Test full data flow:
 
-[source,rescript]
+[source,affinescript]
 ----
 testAsync("loads and renders conversation", async () => {
   let conversation = await API.fetchConversation("test-id")->Promise.map(Result.getExn)
@@ -1789,14 +1789,14 @@ testAsync("loads and renders conversation", async () => {
 |deck.gl/React
 |🔧 If >5k nodes needed
 
-|**rescript-recharts**
+|**affinescript-recharts**
 |Charts
 |Medium (SVG)
 |Low
-|React/ReScript
+|React/AffineScript
 |✅ **Primary choice** for charts
 
-|**rescript-d3**
+|**affinescript-d3**
 |Low-level viz
 |Varies
 |Very High
@@ -1848,7 +1848,7 @@ Conversations span multiple projects. A single conversation might be 60% Project
 
 === Approach 1: Overlapping Clusters
 
-[source,rescript]
+[source,affinescript]
 ----
 module FuzzyProjectClusters = {
   type projectMembership = {
@@ -1888,7 +1888,7 @@ module FuzzyProjectClusters = {
 
 Use multiple overlapping force-directed layouts:
 
-[source,rescript]
+[source,affinescript]
 ----
 module VennProjectViz = {
   // Each project has a center point
@@ -1928,7 +1928,7 @@ module VennProjectViz = {
 
 Show conversation flow between projects:
 
-[source,rescript]
+[source,affinescript]
 ----
 // Would use Recharts Sankey or custom bindings
 module ProjectFlowSankey = {
@@ -1952,15 +1952,15 @@ module ProjectFlowSankey = {
 
 === Phase 1: Foundation (Week 1-2)
 
-. ✅ Setup ReScript project structure
-. ✅ Install dependencies (`rescript`, `@rescript/react`, `@minnozz/rescript-recharts`)
+. ✅ Setup AffineScript project structure
+. ✅ Install dependencies (`affinescript`, `@affinescript/react`, `@minnozz/affinescript-recharts`)
 . ✅ Define core domain types (Conversation, Message, Artifact)
 . ✅ Create basic React component scaffolding
 . ✅ Setup build pipeline (integrate with existing Elixir project)
 
 === Phase 2: Bindings (Week 2-3)
 
-. ✅ Study rescript-recharts for binding patterns
+. ✅ Study affinescript-recharts for binding patterns
 . ✅ Write minimal Reagraph bindings (just GraphCanvas component)
 . ✅ Test bindings with mock data
 . ✅ Expand bindings incrementally as needed
@@ -1995,13 +1995,13 @@ module ProjectFlowSankey = {
 
 == Conclusion
 
-The ReScript visualization ecosystem is **viable but requires custom binding work**. The language's strengths—type safety, functional paradigm, excellent JavaScript interop—align perfectly with Anamnesis's requirements.
+The AffineScript visualization ecosystem is **viable but requires custom binding work**. The language's strengths—type safety, functional paradigm, excellent JavaScript interop—align perfectly with Anamnesis's requirements.
 
 === Key Takeaways
 
-. **Use rescript-recharts** for standard charts and timelines (mature, well-maintained)
+. **Use affinescript-recharts** for standard charts and timelines (mature, well-maintained)
 . **Write custom Reagraph bindings** for graph visualization (WebGL performance crucial)
-. **Leverage ReScript's type system** to prevent runtime visualization errors
+. **Leverage AffineScript's type system** to prevent runtime visualization errors
 . **Embrace functional patterns** for state management and data transformations
 . **Start minimal** - bind only what you need, expand incrementally
 . **Test at type boundaries** - JSON decoders, external bindings
@@ -2016,19 +2016,19 @@ By following this research and recommendations, Anamnesis visualization layer wi
 * ✅ **Academic rigor** - Well-documented, principled architecture
 * ✅ **Functional paradigm** - Immutable data, pure transformations, composable components
 
-The path forward is clear: **ReScript + Reagraph + rescript-recharts** forms a solid foundation for Anamnesis's visualization needs.
+The path forward is clear: **AffineScript + Reagraph + affinescript-recharts** forms a solid foundation for Anamnesis's visualization needs.
 
 == References
 
 === Official Documentation
 
-* ReScript Language Manual: https://rescript-lang.org/docs/manual/latest/introduction
-* ReScript React: https://rescript-lang.org/docs/react/latest/introduction
-* ReScript Bindings Cookbook: https://github.com/rescriptbr/rescript-bindings-cookbook
+* AffineScript Language Manual: https://affinescript-lang.org/docs/manual/latest/introduction
+* AffineScript React: https://affinescript-lang.org/docs/react/latest/introduction
+* AffineScript Bindings Cookbook: https://github.com/rescriptbr/affinescript-bindings-cookbook
 
 === Libraries
 
-* rescript-recharts: https://github.com/Minnozz/rescript-recharts
+* affinescript-recharts: https://github.com/Minnozz/affinescript-recharts
 * Reagraph: https://github.com/reaviz/reagraph
 * Graph.gl: https://graph.gl/
 * SVAR React Gantt: https://svar.dev/react/gantt/
@@ -2041,14 +2041,14 @@ The path forward is clear: **ReScript + Reagraph + rescript-recharts** forms a s
 
 === Blog Posts
 
-* "Why ReScript Was a Better Fit Than TypeScript for Hyperswitch": https://hyperswitch.io/blog/why-we-chose-rescript-over-typescript
-* "Rewriting a Project in ReScript": https://yangdanny97.github.io/blog/2021/07/09/Migrating-to-Rescript
-* "From TypeScript to ReScript": https://www.greyblake.com/blog/from-typescript-to-rescript/
+* "Why AffineScript Was a Better Fit Than TypeScript for Hyperswitch": https://hyperswitch.io/blog/why-we-chose-affinescript-over-typescript
+* "Rewriting a Project in AffineScript": https://yangdanny97.github.io/blog/2021/07/09/Migrating-to-Rescript
+* "From TypeScript to AffineScript": https://www.greyblake.com/blog/from-typescript-to-affinescript/
 
 === Community
 
-* ReScript Forum: https://forum.rescript-lang.org/
-* awesome-rescript: https://github.com/fhammerschmidt/awesome-rescript
+* AffineScript Forum: https://forum.affinescript-lang.org/
+* awesome-affinescript: https://github.com/fhammerschmidt/awesome-affinescript
 
 ---
 

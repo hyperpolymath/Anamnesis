@@ -75,7 +75,7 @@ Multi-language functional system leveraging each language's strengths:
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Visualization (ReScript): Reagraph graphs, timeline charts,   │
+│  Visualization (AffineScript): Reagraph graphs, timeline charts,   │
 │  fuzzy category viz, type-safe functional React components     │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -89,12 +89,12 @@ Multi-language functional system leveraging each language's strengths:
 | *Reasoning* | λProlog (ELPI) | Higher-order abstract syntax, meta-reasoning |
 | *Analytics* | Julia | Scientific computing without Python, RDF, reservoir computing |
 | *Storage* | Virtuoso + SPARQL | RDF native, named graphs, inference |
-| *Visualization* | ReScript + React | Type safety, functional paradigm, eventual JS replacement |
+| *Visualization* | AffineScript + React | Type safety, functional paradigm, eventual JS replacement |
 
 === Critical Constraints
 
 - ❌ *NO PYTHON* - Use Julia for all scientific computing
-- ✅ *Type safety* throughout (OCaml, ReScript, Elixir typespecs)
+- ✅ *Type safety* throughout (OCaml, AffineScript, Elixir typespecs)
 - ✅ *Functional paradigm* - Immutability, pure functions, declarative
 - ✅ *Multi-LLM* from start (stub complexity initially)
 - ✅ *Academic rigor* - Research-grade documentation
@@ -124,7 +124,7 @@ Multi-language functional system leveraging each language's strengths:
 │   ├── src/reservoir/         # Reservoir computing, KBANN
 │   ├── src/graphs/            # Graph processing
 │   └── README.md
-├── visualization/              # ReScript UI
+├── visualization/              # AffineScript UI
 │   ├── src/components/        # React components
 │   ├── src/bindings/          # JS library bindings
 │   ├── src/types/             # Domain types
@@ -145,7 +145,7 @@ Multi-language functional system leveraging each language's strengths:
 - *OCaml* 5.0+ (via OPAM)
 - *Elixir* 1.15+ (via asdf or package manager)
 - *Julia* 1.10+ (via juliaup)
-- *Node.js* 18+ (for ReScript)
+- *Node.js* 18+ (for AffineScript)
 - *Virtuoso* 7+ (via Docker or native)
 
 === Quick Start
@@ -175,7 +175,7 @@ dune build
 cd ../learning
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
-= 6. Build visualization (ReScript)
+= 6. Build visualization (AffineScript)
 
 cd ../visualization
 npm install
@@ -212,7 +212,7 @@ mix phx.server
 - [x] Julia RDF modules (schema, serialization, SPARQL, Virtuoso)
 - [x] Julia reservoir computing modules (ESN, embeddings)
 - [x] Julia graph analysis modules
-- [x] ReScript domain types and color mixing
+- [x] AffineScript domain types and color mixing
 
 === In Progress 🚧
 
@@ -224,7 +224,7 @@ mix phx.server
 === Phase 1 Roadmap 📋
 
 1. ✅ Create Anamnesis repository
-2. ✅ Research tech options (Julia RDF, reservoir computing, ReScript viz, OCaml parsers, λProlog)
+2. ✅ Research tech options (Julia RDF, reservoir computing, AffineScript viz, OCaml parsers, λProlog)
 3. ⬜ Copy proving ground (zotero-voyant-export)
 4. ✅ Setup basic infrastructure (build systems, test frameworks)
 5. 🚧 *Milestone 1*: Parse single Claude conversation JSON → Virtuoso RDF triples
@@ -237,7 +237,7 @@ mix phx.server
 - [x] Port communication (OCaml ↔ Elixir)
 - [x] Basic RDF generation (Julia)
 - [ ] Virtuoso storage integration
-- [ ] Simple graph visualization (ReScript)
+- [ ] Simple graph visualization (AffineScript)
 
 == Key Design Concepts
 
@@ -249,11 +249,11 @@ Conversations don't belong to just one project. Anamnesis supports fuzzy boundar
 anamnesis:conv:123 anamnesis:belongsTo anamnesis:proj:anamnesis ;
                    anamnesis:membershipStrength 0.8 .
 
-anamnesis:conv:123 anamnesis:belongsTo anamnesis:proj:rescript-evangeliser ;
+anamnesis:conv:123 anamnesis:belongsTo anamnesis:proj:affinescript-evangeliser ;
                    anamnesis:membershipStrength 0.3 .
 ```
 
-Visualized via color mixing: 80% green (Anamnesis) + 30% orange (ReScript) = blended color.
+Visualized via color mixing: 80% green (Anamnesis) + 30% orange (AffineScript) = blended color.
 
 === Artifact Lifecycle Tracking
 
@@ -302,7 +302,7 @@ graph:categories:uuid-1    # Project membership
   - `julia-rdf-ecosystem.adoc` - RDF libraries (Serd.jl recommended)
   - `julia-reservoir-computing.adoc` - ESN, KBANN (ReservoirComputing.jl)
   - `puppygraph-evaluation.adoc` - Property graphs vs RDF (stick with Virtuoso)
-  - `rescript-visualization.adoc` - Reagraph, rescript-recharts
+  - `affinescript-visualization.adoc` - Reagraph, affinescript-recharts
   - `ocaml-parsing-elixir-bridge.adoc` - Angstrom, ports vs NIFs
   - `lambda-prolog-meta-reasoning.adoc` - ELPI, HOAS, integration
 - *Component READMEs*: Each directory has detailed setup/usage docs
@@ -341,7 +341,7 @@ The `zotero-voyant-export` repository is our test case - it's contaminated with 
 
 == Related Projects
 
-- *ReScript Evangeliser* - Learning curve synergies
+- *AffineScript Evangeliser* - Learning curve synergies
 - *Zotero:NSAI* - Neurosymbolic AI integration
 - *Fogbinder* - Uncertainty-as-feature framework
 

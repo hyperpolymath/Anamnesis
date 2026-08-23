@@ -33,9 +33,9 @@ setup-learning:
     cd learning && julia --project=. -e 'using Pkg; Pkg.instantiate()'
     @echo "✓ Learning dependencies installed"
 
-# Setup ReScript visualization
+# Setup AffineScript visualization
 setup-visualization:
-    @echo "==> Setting up ReScript visualization..."
+    @echo "==> Setting up AffineScript visualization..."
     cd visualization && npm install
     @echo "✓ Visualization dependencies installed"
 
@@ -72,9 +72,9 @@ build-learning:
     @echo "==> Verifying Julia learning component..."
     cd learning && julia --project=. -e 'using AnamnesisAnalytics; println("✓ Module loads successfully")'
 
-# Build ReScript visualization
+# Build AffineScript visualization
 build-visualization:
-    @echo "==> Building ReScript visualization..."
+    @echo "==> Building AffineScript visualization..."
     cd visualization && npm run res:build
     @echo "✓ Visualization built successfully"
 
@@ -100,9 +100,9 @@ test-learning:
     @echo "==> Testing Julia learning..."
     cd learning && julia --project=. test/runtests.jl 2>/dev/null || echo "⚠ No tests yet (starter code)"
 
-# Test ReScript visualization
+# Test AffineScript visualization
 test-visualization:
-    @echo "==> Testing ReScript visualization..."
+    @echo "==> Testing AffineScript visualization..."
     cd visualization && npm test 2>/dev/null || echo "⚠ No tests yet (starter code)"
 
 # ============================================================================
@@ -127,10 +127,10 @@ format-learning:
     @echo "==> Formatting Julia code..."
     @echo "⚠ JuliaFormatter not configured yet"
 
-# Format ReScript code
+# Format AffineScript code
 format-visualization:
-    @echo "==> Formatting ReScript code..."
-    cd visualization && npm run res:build 2>/dev/null || echo "✓ ReScript formatter runs on build"
+    @echo "==> Formatting AffineScript code..."
+    cd visualization && npm run res:build 2>/dev/null || echo "✓ AffineScript formatter runs on build"
 
 # Lint all code
 lint: lint-parser lint-orchestrator lint-visualization
@@ -145,10 +145,10 @@ lint-orchestrator:
     @echo "==> Linting Elixir orchestrator..."
     cd orchestrator && mix dialyzer 2>/dev/null || echo "⚠ Dialyzer not configured yet"
 
-# Lint ReScript (compiler catches everything)
+# Lint AffineScript (compiler catches everything)
 lint-visualization:
-    @echo "==> Linting ReScript visualization..."
-    @echo "✓ ReScript compiler is the linter"
+    @echo "==> Linting AffineScript visualization..."
+    @echo "✓ AffineScript compiler is the linter"
 
 # ============================================================================
 # Clean
@@ -172,9 +172,9 @@ clean-learning:
     @echo "==> Cleaning Julia learning..."
     cd learning && rm -rf Manifest.toml 2>/dev/null || true
 
-# Clean ReScript build
+# Clean AffineScript build
 clean-visualization:
-    @echo "==> Cleaning ReScript visualization..."
+    @echo "==> Cleaning AffineScript visualization..."
     cd visualization && npm run res:clean && rm -rf node_modules/.cache
 
 # ============================================================================
@@ -189,7 +189,7 @@ dev:
     @echo "\n📦 Virtuoso running on http://localhost:8890"
     @echo "\nNext steps:"
     @echo "  1. cd orchestrator && iex -S mix phx.server  # Elixir orchestrator"
-    @echo "  2. cd visualization && npm run dev          # ReScript dev server"
+    @echo "  2. cd visualization && npm run dev          # AffineScript dev server"
 
 # Interactive shell (Elixir)
 shell-elixir:
@@ -340,12 +340,12 @@ rsr-checklist:
     cat << 'EOF'
     RSR Compliance Checklist for Anamnesis
 
-    [ok] 1. Type Safety (90%): OCaml, Elixir typespecs, ReScript, Julia
+    [ok] 1. Type Safety (90%): OCaml, Elixir typespecs, AffineScript, Julia
     [ok] 2. Memory Safety (60%): GC languages (OCaml/Elixir/Julia), no unsafe
     [!!] 3. Offline-First (40%): Parser/reasoner offline, Virtuoso local
     [ok] 4. Documentation (100%): README, component docs, architecture
     [!!] 5. Testing (10%): Starter code only, no tests yet
-    [ok] 6. Build System (80%): dune, mix, just, flake.nix planned
+    [ok] 6. Build System (80%): dune, mix, just, flake.guix planned
     [ok] 7. Security (90%): SECURITY.md, .well-known/security.txt
     [ok] 8. Licensing (100%): LICENSE.txt (MIT OR Palimpsest-0.8)
     [ok] 9. Contribution (100%): CONTRIBUTING.md, TPCF Perimeter 2
@@ -358,7 +358,7 @@ rsr-checklist:
     - Add test infrastructure (all components)
     - Achieve 70% test coverage
     - Complete offline-first documentation
-    - Setup Nix flakes for reproducible builds
+    - Setup Guix flakes for reproducible builds
     EOF
 
 # Show quick start guide

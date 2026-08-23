@@ -46,7 +46,7 @@ Initial implementation phase - core infrastructure scaffolded, working toward Mi
 * [ ] ELPI integration
 * [ ] Port interface
 
-==== Visualization (ReScript)
+==== Visualization (AffineScript)
 * [x] Domain types
 * [x] Fuzzy category color mixing
 * [ ] Graph component (Reagraph binding)

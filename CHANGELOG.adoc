@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Julia RDF Ecosystem Analysis (Serd.jl, SPARQL via HTTP.jl)
   - Julia Reservoir Computing Survey (ReservoirComputing.jl, KBANN)
   - PuppyGraph Evaluation (recommendation: stick with Virtuoso)
-  - ReScript Visualization Ecosystem (Reagraph, rescript-recharts)
+  - AffineScript Visualization Ecosystem (Reagraph, affinescript-recharts)
   - OCaml Parsing & Elixir Bridge (Angstrom, ports over NIFs)
   - λProlog/ELPI Meta-Reasoning (HOAS, integration patterns)
 - System architecture document (docs/architecture/system-architecture.adoc, 50+ sections)
@@ -67,10 +67,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Port interface for Elixir communication
 - Module scaffolding for reservoir computing and KBANN
 
-==== Visualization Component (ReScript)
+==== Visualization Component (AffineScript)
 - Type-safe domain model with phantom types (Domain.res)
 - Color mixing for fuzzy project categorization (ColorMixing.res)
-- ReScript compiler and npm configuration
+- AffineScript compiler and npm configuration
 - Component scaffolding
 
 ==== Documentation
@@ -81,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 === Technical Decisions
 - **NO PYTHON constraint** enforced throughout (Julia for scientific computing)
-- Type safety via OCaml, Elixir typespecs, ReScript, Julia type annotations
+- Type safety via OCaml, Elixir typespecs, AffineScript, Julia type annotations
 - Functional paradigm across all components
 - Fault tolerance through OTP supervision trees and Erlang ports
 - Multi-LLM support designed from the start (stubbed complexity initially)

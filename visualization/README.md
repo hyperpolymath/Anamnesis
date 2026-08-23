@@ -1,4 +1,4 @@
-# Visualization Component (ReScript)
+# Visualization Component (AffineScript)
 
 Type-safe, functional visualization layer for exploring conversation graphs, artifact lifecycles, and multi-project categorization.
 
@@ -12,11 +12,11 @@ Type-safe, functional visualization layer for exploring conversation graphs, art
 
 ## Technology Stack
 
-- **ReScript** 11+ - Type-safe functional language compiling to JavaScript
+- **AffineScript** 11+ - Type-safe functional language compiling to JavaScript
 - **React** 18+ - UI component library
-- **rescript-react** - Official React bindings
+- **affinescript-react** - Official React bindings
 - **Reagraph** - WebGL graph visualization (custom bindings)
-- **rescript-recharts** - Timeline/chart visualization
+- **affinescript-recharts** - Timeline/chart visualization
 - **Vite** - Build tool and dev server
 
 ## Directory Structure
@@ -27,7 +27,7 @@ visualization/
 │   ├── Anamnesis.res              # Root module
 │   ├── bindings/
 │   │   ├── Reagraph.res           # Graph visualization bindings
-│   │   ├── Recharts.res           # Re-export rescript-recharts
+│   │   ├── Recharts.res           # Re-export affinescript-recharts
 │   │   └── SvarGantt.res          # Timeline/Gantt bindings
 │   ├── components/
 │   │   ├── ConversationGraph.res  # Main graph visualization
@@ -50,7 +50,7 @@ visualization/
 ├── public/
 │   ├── index.html
 │   └── assets/
-├── bsconfig.json                  # ReScript compiler config
+├── bsconfig.json                  # AffineScript compiler config
 ├── package.json
 ├── vite.config.js
 └── README.md                      # This file
@@ -60,7 +60,7 @@ visualization/
 
 ### Type-Safe Domain Modeling
 
-```rescript
+```affinescript
 // types/Domain.res
 
 // Phantom types prevent mixing IDs
@@ -113,7 +113,7 @@ type graph = {
 
 ### Reagraph Bindings
 
-```rescript
+```affinescript
 // bindings/Reagraph.res
 
 module GraphCanvas = {
@@ -169,14 +169,14 @@ let toReagraphEdge = (edge: Domain.edge): reagraphEdge => {
 
 ### Color Mixing (Fuzzy Categories)
 
-```rescript
+```affinescript
 // transforms/ColorMixing.res
 
 type rgb = {r: int, g: int, b: int}
 
 let projectColors = Map.String.fromArray([
   ("anamnesis", {r: 72, g: 187, b: 120}),           // Green
-  ("rescript-evangeliser", {r: 230, g: 74, b: 25}), // Orange
+  ("affinescript-evangeliser", {r: 230, g: 74, b: 25}), // Orange
   ("zotero-nsai", {r: 52, g: 152, b: 219}),         // Blue
 ])
 
@@ -212,7 +212,7 @@ let mixColors = (memberships: array<Domain.projectMembership>): string => {
 
 ### State Management
 
-```rescript
+```affinescript
 // state/AppState.res
 
 type state = {
@@ -265,7 +265,7 @@ let initialState = {
 
 ### API Client
 
-```rescript
+```affinescript
 // state/Api.res
 
 type apiError =
@@ -351,22 +351,22 @@ npm install
 ```json
 {
   "dependencies": {
-    "@rescript/core": "^1.0.0",
-    "@rescript/react": "^0.12.0",
+    "@affinescript/core": "^1.0.0",
+    "@affinescript/react": "^0.12.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "reagraph": "^4.0.0",
-    "@minnozz/rescript-recharts": "^1.0.0"
+    "@minnozz/affinescript-recharts": "^1.0.0"
   },
   "devDependencies": {
-    "rescript": "^11.0.0",
+    "affinescript": "^11.0.0",
     "vite": "^5.0.0",
     "@vitejs/plugin-react": "^4.0.0"
   }
 }
 ```
 
-### ReScript Config
+### AffineScript Config
 
 ```json
 // bsconfig.json
@@ -387,8 +387,8 @@ npm install
   ],
   "suffix": ".bs.js",
   "bs-dependencies": [
-    "@rescript/core",
-    "@rescript/react"
+    "@affinescript/core",
+    "@affinescript/react"
   ],
   "reason": {
     "react-jsx": 4
@@ -416,7 +416,7 @@ npm run res:build
 
 ### Main App Component
 
-```rescript
+```affinescript
 // components/App.res
 
 @react.component
@@ -464,7 +464,7 @@ let make = () => {
 
 ### Conversation Graph Component
 
-```rescript
+```affinescript
 // components/ConversationGraph.res
 
 @react.component
@@ -512,7 +512,7 @@ test('mixColors returns gray for empty memberships', () => {
 test('mixColors blends multiple projects', () => {
   const memberships = [
     { projectId: 'anamnesis', strength: 0.6 },
-    { projectId: 'rescript-evangeliser', strength: 0.4 },
+    { projectId: 'affinescript-evangeliser', strength: 0.4 },
   ];
 
   const result = mixColors(memberships);
@@ -543,7 +543,7 @@ test('renders graph canvas', () => {
 
 ### Memoization
 
-```rescript
+```affinescript
 let expensiveComputation = React.useMemo1(
   () => {
     // Heavy computation
@@ -555,7 +555,7 @@ let expensiveComputation = React.useMemo1(
 
 ### Virtual Scrolling
 
-```rescript
+```affinescript
 // For large lists
 module VirtualList = {
   @react.component
@@ -576,7 +576,7 @@ module VirtualList = {
 
 ### Debounced Search
 
-```rescript
+```affinescript
 let useDebounce = (value, delay) => {
   let (debouncedValue, setDebouncedValue) = React.useState(() => value)
 
@@ -625,7 +625,7 @@ server {
 
 ### Type Errors
 
-ReScript provides clear compiler errors. Read them carefully:
+AffineScript provides clear compiler errors. Read them carefully:
 
 ```
 Error: This has type:
@@ -634,12 +634,12 @@ But somewhere wanted:
   int
 ```
 
-### ReScript Compilation Fails
+### AffineScript Compilation Fails
 
 ```bash
 # Clean build
-npx rescript clean
-npx rescript build
+npx affinescript clean
+npx affinescript build
 ```
 
 ### Reagraph Not Rendering
@@ -654,18 +654,18 @@ console.log('WebGL supported:', !!gl);
 
 ## References
 
-- [ReScript Documentation](https://rescript-lang.org/docs/manual/latest/introduction)
-- [ReScript React](https://rescript-lang.org/docs/react/latest/introduction)
+- [AffineScript Documentation](https://affinescript-lang.org/docs/manual/latest/introduction)
+- [AffineScript React](https://affinescript-lang.org/docs/react/latest/introduction)
 - [Reagraph](https://reagraph.dev/)
-- [rescript-recharts](https://github.com/minnozz/rescript-recharts)
-- Research: `/docs/research/rescript-visualization.adoc`
+- [affinescript-recharts](https://github.com/minnozz/affinescript-recharts)
+- Research: `/docs/research/affinescript-visualization.adoc`
 - Architecture: `/docs/architecture/system-architecture.adoc`
 
 ## Next Steps
 
 1. Create Reagraph bindings
 2. Implement ConversationGraph component
-3. Build ArtifactTimeline with rescript-recharts
+3. Build ArtifactTimeline with affinescript-recharts
 4. Add SearchFilter component
 5. Integrate API client
 6. Test with mock data
