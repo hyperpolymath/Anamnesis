@@ -1,50 +1,66 @@
-# Offline-First Architecture
+== Offline-First Architecture
 
-Anamnesis is designed to function in **fully offline, air-gapped environments** with no external dependencies.
+Anamnesis is designed to function in *fully offline, air-gapped
+environments* with no external dependencies.
 
-## Overview
+=== Overview
 
-Anamnesis prioritizes local-first, offline-capable operation for:
-- **Data sovereignty**: Your conversation data stays on your machine
-- **Security**: No cloud services, no external APIs, no telemetry
-- **Reliability**: Works without internet connectivity
-- **Privacy**: Conversations never leave your infrastructure
-- **Auditability**: All components can be inspected and verified
+Anamnesis prioritizes local-first, offline-capable operation for: -
+*Data sovereignty*: Your conversation data stays on your machine -
+*Security*: No cloud services, no external APIs, no telemetry -
+*Reliability*: Works without internet connectivity - *Privacy*:
+Conversations never leave your infrastructure - *Auditability*: All
+components can be inspected and verified
 
-## Offline Capabilities
+=== Offline Capabilities
 
-### ✅ Fully Offline Components
+==== ✅ Fully Offline Components
 
-| Component | Offline Status | Notes |
-|-----------|---------------|-------|
-| **Parser (OCaml)** | ✅ 100% Offline | Pure functional parsing, no network I/O |
-| **Orchestrator (Elixir)** | ✅ 100% Offline | Local process orchestration only |
-| **Reasoning (λProlog)** | ✅ 100% Offline | Logic programming, no external calls |
-| **Learning (Julia)** | ✅ 100% Offline | RDF generation, reservoir computing |
-| **Visualization (AffineScript)** | ✅ 100% Offline | Client-side rendering, no CDNs |
-| **Virtuoso (RDF Store)** | ✅ 100% Offline | Local triplestore, SPARQL queries |
+[width="100%",cols="34%,45%,21%",options="header",]
+|===
+|Component |Offline Status |Notes
+|*Parser (OCaml)* |✅ 100% Offline |Pure functional parsing, no network
+I/O
 
-### ⚠️ Optional Online Features
+|*Orchestrator (Elixir)* |✅ 100% Offline |Local process orchestration
+only
 
-- **Dependency updates**: Can use vendored/mirrored packages
-- **Documentation hosting**: Serve locally with static file server
-- **CI/CD**: Can run entirely on local GitLab/Gitea instance
+|*Reasoning (λProlog)* |✅ 100% Offline |Logic programming, no external
+calls
 
-## Air-Gapped Deployment
+|*Learning (Julia)* |✅ 100% Offline |RDF generation, reservoir
+computing
 
-### Prerequisites
+|*Visualization (AffineScript)* |✅ 100% Offline |Client-side rendering,
+no CDNs
 
-1. **Offline dependency bundles** (see below)
-2. **Docker or native runtime** for Virtuoso
-3. **Build toolchains**: OCaml (opam), Elixir (mix), Julia, Node.js
+|*Virtuoso (RDF Store)* |✅ 100% Offline |Local triplestore, SPARQL
+queries
+|===
 
-### Installation Steps
+==== ⚠️ Optional Online Features
 
-#### 1. Prepare Offline Bundle
+* *Dependency updates*: Can use vendored/mirrored packages
+* *Documentation hosting*: Serve locally with static file server
+* *CI/CD*: Can run entirely on local GitLab/Gitea instance
+
+=== Air-Gapped Deployment
+
+==== Prerequisites
+
+[arabic]
+. *Offline dependency bundles* (see below)
+. *Docker or native runtime* for Virtuoso
+. *Build toolchains*: OCaml (opam), Elixir (mix), Julia, Node.js
+
+==== Installation Steps
+
+===== 1. Prepare Offline Bundle
 
 On a connected machine, download all dependencies:
 
-```bash
+[source,bash]
+----
 # Clone repository
 git clone https://github.com/Hyperpolymath/anamnesis.git
 cd anamnesis
@@ -77,18 +93,20 @@ tar -czf anamnesis-offline-bundle.tar.gz \
   orchestrator/deps \
   learning/.julia \
   visualization/node_modules
-```
+----
 
-#### 2. Transfer to Air-Gapped Environment
+===== 2. Transfer to Air-Gapped Environment
 
-```bash
+[source,bash]
+----
 # Copy tarball via removable media, secure file transfer, etc.
 scp anamnesis-offline-bundle.tar.gz airgap-host:/opt/
-```
+----
 
-#### 3. Install on Air-Gapped Machine
+===== 3. Install on Air-Gapped Machine
 
-```bash
+[source,bash]
+----
 # Extract bundle
 cd /opt
 tar -xzf anamnesis-offline-bundle.tar.gz
@@ -114,13 +132,14 @@ cd ../visualization
 # Build all components
 cd ..
 just build-all
-```
+----
 
-#### 4. Run Virtuoso Locally (Docker or Native)
+===== 4. Run Virtuoso Locally (Docker or Native)
 
-**Option A: Docker (if available in air-gapped environment)**
+*Option A: Docker (if available in air-gapped environment)*
 
-```bash
+[source,bash]
+----
 # Load Virtuoso image from TAR (prepared on connected machine)
 docker load -i virtuoso-opensource-7.tar
 
@@ -132,11 +151,12 @@ docker run -d \
   -v /opt/anamnesis-data:/database \
   --name virtuoso \
   openlink/virtuoso-opensource-7
-```
+----
 
-**Option B: Native Virtuoso**
+*Option B: Native Virtuoso*
 
-```bash
+[source,bash]
+----
 # Install from source or pre-built binary
 # Configure virtuoso.ini for local-only operation:
 [Parameters]
@@ -149,11 +169,12 @@ MaxDirtyBuffers = 6000
 ServerPort = 8890
 ServerRoot = /opt/virtuoso/vsp
 MaxClients = 10
-```
+----
 
-#### 5. Verify Offline Operation
+===== 5. Verify Offline Operation
 
-```bash
+[source,bash]
+----
 # Disable network interface (to prove offline capability)
 sudo ip link set dev eth0 down
 
@@ -181,87 +202,92 @@ WHERE {
 }
 LIMIT 10
 EOF
-```
+----
 
-## Local Development Without Internet
+=== Local Development Without Internet
 
-### Opam Local Repository
+==== Opam Local Repository
 
-```bash
+[source,bash]
+----
 # On connected machine, create local opam repo
 mkdir -p /opt/opam-local-repo
 cd /opt/opam-local-repo
 opam admin cache --all
 opam repository add local file:///opt/opam-local-repo --rank=100
-```
+----
 
-### Hex Local Mirror
+==== Hex Local Mirror
 
-```bash
+[source,bash]
+----
 # On connected machine
 mix hex.package fetch --all --output /opt/hex-mirror
 
 # On air-gapped machine
 export HEX_MIRROR=/opt/hex-mirror
 mix deps.get --only local
-```
+----
 
-### Julia Package Server
+==== Julia Package Server
 
-```bash
+[source,bash]
+----
 # Setup local Julia package registry
 export JULIA_PKG_SERVER="file:///opt/julia-packages"
-```
+----
 
-### NPM Verdaccio (Local Registry)
+==== NPM Verdaccio (Local Registry)
 
-```bash
+[source,bash]
+----
 # Run local npm registry
 docker run -d -p 4873:4873 verdaccio/verdaccio
 
 # Configure npm
 npm config set registry http://localhost:4873/
-```
+----
 
-## Data Privacy & Sovereignty
+=== Data Privacy & Sovereignty
 
-### No External Data Transmission
+==== No External Data Transmission
 
-Anamnesis **NEVER** transmits data externally:
-- ❌ No telemetry or analytics
-- ❌ No cloud API calls (OpenAI, Anthropic, etc.)
-- ❌ No update checks or version pings
-- ❌ No CDN requests for JavaScript/CSS
-- ❌ No external DNS queries
+Anamnesis *NEVER* transmits data externally: - ❌ No telemetry or
+analytics - ❌ No cloud API calls (OpenAI, Anthropic, etc.) - ❌ No
+update checks or version pings - ❌ No CDN requests for JavaScript/CSS -
+❌ No external DNS queries
 
-### Verification
+==== Verification
 
 Audit network traffic during operation:
 
-```bash
+[source,bash]
+----
 # Monitor all network connections
 sudo tcpdump -i any -n | grep -v "127.0.0.1\|::1"
 
 # Should show NO external traffic when processing conversations
-```
+----
 
-### Firewall Configuration
+==== Firewall Configuration
 
 Lock down network access entirely:
 
-```bash
+[source,bash]
+----
 # Allow only localhost
 sudo iptables -A OUTPUT -o lo -j ACCEPT
 sudo iptables -A OUTPUT -j DROP
 
 # Or use AppArmor/SELinux profiles
-```
+----
 
-## Offline Documentation
+=== Offline Documentation
 
-### Generate Local Docs
+==== Generate Local Docs
 
-```bash
+[source,bash]
+----
 # Generate all component documentation
 just docs
 
@@ -270,19 +296,19 @@ cd parser/_build/default/_doc/_html
 python3 -m http.server 8000
 
 # Access at http://localhost:8000
-```
+----
 
-### Offline Manual
+==== Offline Manual
 
-All documentation is included in the repository:
-- `README.md` - Getting started
-- `docs/` - Comprehensive guides (AsciiDoc, viewable in any text editor)
-- `CONTRIBUTING.md` - Development guide
-- `SECURITY.md` - Security model
+All documentation is included in the repository: - `+README.md+` -
+Getting started - `+docs/+` - Comprehensive guides (AsciiDoc, viewable
+in any text editor) - `+CONTRIBUTING.md+` - Development guide -
+`+SECURITY.md+` - Security model
 
 Convert AsciiDoc to HTML for offline browsing:
 
-```bash
+[source,bash]
+----
 # Install asciidoctor (on connected machine)
 gem install asciidoctor
 
@@ -291,13 +317,14 @@ find docs -name "*.adoc" -exec asciidoctor {} \;
 
 # Bundle for offline use
 tar -czf anamnesis-docs-html.tar.gz docs/**/*.html
-```
+----
 
-## Offline Testing
+=== Offline Testing
 
 Run full test suite without network:
 
-```bash
+[source,bash]
+----
 # Disable network
 sudo ip link set dev eth0 down
 
@@ -309,15 +336,16 @@ just validate
 
 # Re-enable network
 sudo ip link set dev eth0 up
-```
+----
 
-## Supply Chain Security
+=== Supply Chain Security
 
-### Dependency Vendoring
+==== Dependency Vendoring
 
 Vendor all dependencies to avoid supply chain attacks:
 
-```bash
+[source,bash]
+----
 # OCaml - use opam pin to vendor
 opam pin add anamnesis_parser . --no-action
 opam pin add <dependency> <version> --no-action
@@ -331,13 +359,14 @@ opam pin add <dependency> <version> --no-action
 
 # Node.js - use package-lock.json and npm ci
 npm ci --offline
-```
+----
 
-### Reproducible Builds
+==== Reproducible Builds
 
 Use Guix flakes (planned) for bit-for-bit reproducible builds:
 
-```guix
+[source,guix]
+----
 # flake.guix (future)
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
@@ -345,35 +374,38 @@ Use Guix flakes (planned) for bit-for-bit reproducible builds:
     packages.x86_64-linux.default = ...;
   };
 }
-```
+----
 
-## Offline CI/CD
+=== Offline CI/CD
 
 Run GitLab CI locally without network:
 
-```bash
+[source,bash]
+----
 # Install GitLab Runner (offline binary)
 # Configure for local execution only
 
 gitlab-runner exec docker build-parser \
   --docker-pull-policy never \
   --docker-network-mode none
-```
+----
 
-## Backup & Portability
+=== Backup & Portability
 
-### Export Conversations (RDF)
+==== Export Conversations (RDF)
 
-```bash
+[source,bash]
+----
 # Export all RDF data from Virtuoso
 isql 1111 dba anamnesis << EOF
 SPARQL SELECT * WHERE { ?s ?p ?o } INTO <file:///backup/anamnesis-$(date +%Y%m%d).ttl>;
 EOF
-```
+----
 
-### Migrate to Different Machine
+==== Migrate to Different Machine
 
-```bash
+[source,bash]
+----
 # 1. Stop services
 docker stop virtuoso
 
@@ -386,21 +418,23 @@ scp virtuoso-backup.tar.gz newhost:/opt/
 # 4. Restore on new machine
 tar -xzf /opt/virtuoso-backup.tar.gz -C /
 docker start virtuoso
-```
+----
 
-## Offline Security Updates
+=== Offline Security Updates
 
-### Security Patch Workflow
+==== Security Patch Workflow
 
-1. **Connected environment**: Download security patches
-2. **Verify signatures**: `opam admin check`, `mix hex.audit`
-3. **Test in staging**: Apply patches, run tests
-4. **Transfer to air-gap**: Via secure media
-5. **Apply in production**: Update dependencies, rebuild
+[arabic]
+. *Connected environment*: Download security patches
+. *Verify signatures*: `+opam admin check+`, `+mix hex.audit+`
+. *Test in staging*: Apply patches, run tests
+. *Transfer to air-gap*: Via secure media
+. *Apply in production*: Update dependencies, rebuild
 
-### Vulnerability Scanning (Offline)
+==== Vulnerability Scanning (Offline)
 
-```bash
+[source,bash]
+----
 # OCaml - manual audit (no automated scanner)
 opam list --installed-roots > installed.txt
 
@@ -409,85 +443,84 @@ mix deps.audit --offline
 
 # Node.js - npm audit (with vendored registry)
 npm audit --offline
-```
+----
 
-## Performance Considerations
+=== Performance Considerations
 
-### Local vs. Cloud
+==== Local vs. Cloud
 
-Anamnesis is **faster offline** than cloud alternatives:
-- ✅ No network latency
-- ✅ No API rate limits
-- ✅ No authentication overhead
-- ✅ Direct filesystem access
-- ✅ Local SPARQL queries (milliseconds)
+Anamnesis is *faster offline* than cloud alternatives: - ✅ No network
+latency - ✅ No API rate limits - ✅ No authentication overhead - ✅
+Direct filesystem access - ✅ Local SPARQL queries (milliseconds)
 
-### Hardware Recommendations
+==== Hardware Recommendations
 
-**Minimum** (single conversation processing):
-- 2 CPU cores
-- 4 GB RAM
-- 10 GB disk space
+*Minimum* (single conversation processing): - 2 CPU cores - 4 GB RAM -
+10 GB disk space
 
-**Recommended** (large-scale analysis, 1000+ conversations):
-- 8 CPU cores
-- 16 GB RAM
-- 100 GB SSD
+*Recommended* (large-scale analysis, 1000+ conversations): - 8 CPU cores
+- 16 GB RAM - 100 GB SSD
 
-## Troubleshooting Offline Issues
+=== Troubleshooting Offline Issues
 
-### Common Problems
+==== Common Problems
 
-**Problem**: Opam tries to fetch packages
+*Problem*: Opam tries to fetch packages
 
-**Solution**: Use `--assume-depexts` and cached packages
-```bash
+*Solution*: Use `+--assume-depexts+` and cached packages
+
+[source,bash]
+----
 export OPAMDOWNLOADJOBS=0
 opam install --deps-only . --assume-depexts
-```
+----
 
-**Problem**: Mix tries to fetch hex.pm
+*Problem*: Mix tries to fetch hex.pm
 
-**Solution**: Use local dependencies
-```bash
+*Solution*: Use local dependencies
+
+[source,bash]
+----
 export HEX_OFFLINE=1
 mix deps.get --only local
-```
+----
 
-**Problem**: Julia tries to download packages
+*Problem*: Julia tries to download packages
 
-**Solution**: Use offline mode
-```bash
+*Solution*: Use offline mode
+
+[source,bash]
+----
 export JULIA_PKG_SERVER=""
 julia --project=. -e 'using Pkg; Pkg.offline(true); Pkg.instantiate()'
-```
+----
 
-**Problem**: npm install fails
+*Problem*: npm install fails
 
-**Solution**: Use bundled node_modules or local registry
-```bash
+*Solution*: Use bundled node_modules or local registry
+
+[source,bash]
+----
 npm ci --offline
-```
+----
 
-## Certification
+=== Certification
 
-Anamnesis passes **offline-first certification**:
-- ✅ All core functionality works without network
-- ✅ No required external dependencies
-- ✅ Data never leaves local machine
-- ✅ Reproducible builds possible
-- ✅ Supply chain auditable
+Anamnesis passes *offline-first certification*: - ✅ All core
+functionality works without network - ✅ No required external
+dependencies - ✅ Data never leaves local machine - ✅ Reproducible
+builds possible - ✅ Supply chain auditable
 
-## Future Improvements
+=== Future Improvements
 
-- [ ] Guix flakes for fully reproducible builds
-- [ ] Embedded database option (RocksDB/SQLite) for single-binary deployment
-- [ ] Standalone binary distribution (OCaml → native, Elixir → escript)
-- [ ] Offline package registry bundled in release
-- [ ] Zero-dependency mode (embedded SQLite for RDF, no Virtuoso)
+* [ ] Guix flakes for fully reproducible builds
+* [ ] Embedded database option (RocksDB/SQLite) for single-binary
+deployment
+* [ ] Standalone binary distribution (OCaml → native, Elixir → escript)
+* [ ] Offline package registry bundled in release
+* [ ] Zero-dependency mode (embedded SQLite for RDF, no Virtuoso)
 
----
+'''''
 
-**Last updated**: 2025-11-22
-**Offline compliance**: 100% for core features
-**Next review**: After first production deployment
+*Last updated*: 2025-11-22 *Offline compliance*: 100% for core features
+*Next review*: After first production deployment

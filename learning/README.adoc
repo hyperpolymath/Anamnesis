@@ -1,30 +1,31 @@
-# Learning Component (Julia)
+== Learning Component (Julia)
 
-RDF manipulation, graph processing, reservoir computing, and knowledge-augmented neural networks for Anamnesis analytics.
+RDF manipulation, graph processing, reservoir computing, and
+knowledge-augmented neural networks for Anamnesis analytics.
 
-## Purpose
+=== Purpose
 
-- Generate RDF triples from parsed conversations
-- Execute SPARQL queries against Virtuoso
-- Convert RDF graphs to MetaGraph structures
-- Train reservoir computing models for conversation analysis
-- Implement KBANN (Knowledge-Based Artificial Neural Networks)
-- Predict conversation patterns and categorization
+* Generate RDF triples from parsed conversations
+* Execute SPARQL queries against Virtuoso
+* Convert RDF graphs to MetaGraph structures
+* Train reservoir computing models for conversation analysis
+* Implement KBANN (Knowledge-Based Artificial Neural Networks)
+* Predict conversation patterns and categorization
 
-## Technology Stack
+=== Technology Stack
 
-- **Julia** 1.10+
-- **Serd.jl** - RDF serialization (N-Triples, Turtle)
-- **HTTP.jl** - SPARQL endpoint communication
-- **ReservoirComputing.jl** - Echo State Networks
-- **Flux.jl** - Deep learning framework (for KBANN)
-- **GraphNeuralNetworks.jl** - Graph embeddings
-- **Graphs.jl + MetaGraphs.jl** - Graph processing
-- **CUDA.jl** - GPU acceleration (optional)
+* *Julia* 1.10+
+* *Serd.jl* - RDF serialization (N-Triples, Turtle)
+* *HTTP.jl* - SPARQL endpoint communication
+* *ReservoirComputing.jl* - Echo State Networks
+* *Flux.jl* - Deep learning framework (for KBANN)
+* *GraphNeuralNetworks.jl* - Graph embeddings
+* *Graphs.jl + MetaGraphs.jl* - Graph processing
+* *CUDA.jl* - GPU acceleration (optional)
 
-## Directory Structure
+=== Directory Structure
 
-```
+....
 learning/
 ├── src/
 │   ├── AnamnesisAnalytics.jl   # Main module
@@ -51,15 +52,16 @@ learning/
 ├── Project.toml
 ├── Manifest.toml
 └── README.md                   # This file
-```
+....
 
-## Key Concepts
+=== Key Concepts
 
-### RDF Triple Generation
+==== RDF Triple Generation
 
 Convert parsed conversations to RDF:
 
-```julia
+[source,julia]
+----
 struct Conversation
     id::String
     platform::Union{String, Nothing}
@@ -96,11 +98,12 @@ function conversation_to_rdf(conv::Conversation)
 
     return triples
 end
-```
+----
 
-### SPARQL Queries
+==== SPARQL Queries
 
-```julia
+[source,julia]
+----
 using HTTP, JSON
 
 function sparql_query(endpoint::String, query::String)
@@ -120,11 +123,12 @@ function parse_sparql_results(json)
     bindings = json["results"]["bindings"]
     return [Dict(k => v["value"] for (k, v) in row) for row in bindings]
 end
-```
+----
 
-### Reservoir Computing
+==== Reservoir Computing
 
-```julia
+[source,julia]
+----
 using ReservoirComputing
 
 function train_conversation_predictor(conversations)
@@ -150,11 +154,12 @@ function train_conversation_predictor(conversations)
 
     return esn, output_layer
 end
-```
+----
 
-### KBANN (Knowledge-Augmented Networks)
+==== KBANN (Knowledge-Augmented Networks)
 
-```julia
+[source,julia]
+----
 using Flux
 
 function create_kbann(rules::Vector{LogicRule}, input_dim::Int)
@@ -186,24 +191,26 @@ function create_kbann(rules::Vector{LogicRule}, input_dim::Int)
 
     return Chain(combined, readout)
 end
-```
+----
 
-## Building
+=== Building
 
-### Install Julia
+==== Install Julia
 
-```bash
+[source,bash]
+----
 # Using juliaup (recommended)
 curl -fsSL https://install.julialang.org | sh
 
 # Set version
 juliaup add 1.10
 juliaup default 1.10
-```
+----
 
-### Install Dependencies
+==== Install Dependencies
 
-```julia
+[source,julia]
+----
 # From Julia REPL
 using Pkg
 
@@ -212,13 +219,14 @@ Pkg.instantiate()
 
 # Or from shell
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
-```
+----
 
-### Package List
+==== Package List
 
-Add to `Project.toml`:
+Add to `+Project.toml+`:
 
-```toml
+[source,toml]
+----
 [deps]
 Serd = "...uuid..."
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
@@ -230,19 +238,21 @@ Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 GraphNeuralNetworks = "...uuid..."
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-```
+----
 
-### Build
+==== Build
 
-```bash
+[source,bash]
+----
 julia --project=. -e 'using Pkg; Pkg.build()'
-```
+----
 
-## Usage
+=== Usage
 
-### Generate RDF from Conversation
+==== Generate RDF from Conversation
 
-```julia
+[source,julia]
+----
 using AnamnesisAnalytics
 
 # Parse conversation (from Elixir)
@@ -256,11 +266,12 @@ ntriples = serialize_ntriples(triples)
 
 # Upload to Virtuoso
 virtuoso_insert("http://localhost:8890/sparql", ntriples)
-```
+----
 
-### Query Virtuoso
+==== Query Virtuoso
 
-```julia
+[source,julia]
+----
 # SPARQL query
 query = """
 PREFIX anamnesis: <http://anamnesis.hyperpolymath.org/ns#>
@@ -277,11 +288,12 @@ results = sparql_query("http://localhost:8890/sparql", query)
 for row in results
     println("Conversation: $(row["conv"]), Time: $(row["timestamp"])")
 end
-```
+----
 
-### Train Reservoir Model
+==== Train Reservoir Model
 
-```julia
+[source,julia]
+----
 # Fetch conversations from Virtuoso
 conversations = fetch_conversations_from_sparql()
 
@@ -297,11 +309,12 @@ esn, output_layer = train_conversation_predictor(embeddings)
 # Predict
 new_conv_embedding = graph_to_embedding(new_conv_graph)
 prediction = esn(Predictive(), new_conv_embedding, output_layer)
-```
+----
 
-### Port Interface (Elixir Communication)
+==== Port Interface (Elixir Communication)
 
-```julia
+[source,julia]
+----
 # port_interface.jl
 using JSON
 
@@ -353,13 +366,14 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     main()
 end
-```
+----
 
-## Testing
+=== Testing
 
-### Unit Tests
+==== Unit Tests
 
-```julia
+[source,julia]
+----
 # test/rdf_tests.jl
 using Test
 using AnamnesisAnalytics
@@ -386,19 +400,21 @@ end
     results = sparql_query("http://localhost:8890/sparql", query)
     @test isa(results, Vector)
 end
-```
+----
 
-### Run Tests
+==== Run Tests
 
-```bash
+[source,bash]
+----
 julia --project=. test/runtests.jl
-```
+----
 
-## Performance Optimizations
+=== Performance Optimizations
 
-### Type Stability
+==== Type Stability
 
-```julia
+[source,julia]
+----
 # Bad: type-unstable
 function process(x)
     if rand() > 0.5
@@ -416,11 +432,12 @@ function process(x)::Float64
         return 1.0
     end
 end
-```
+----
 
-### GPU Acceleration
+==== GPU Acceleration
 
-```julia
+[source,julia]
+----
 using CUDA
 
 # Move to GPU if available
@@ -428,43 +445,47 @@ if CUDA.functional()
     reservoir_matrix = CuArray(reservoir_matrix)
     input_data = CuArray(input_data)
 end
-```
+----
 
-### Sparse Matrices
+==== Sparse Matrices
 
-```julia
+[source,julia]
+----
 using SparseArrays
 
 # For large, sparse graphs
 adjacency = sparse(row_indices, col_indices, values, n, n)
-```
+----
 
-### Batch Processing
+==== Batch Processing
 
-```julia
+[source,julia]
+----
 # Process multiple conversations in batch
 function batch_generate_rdf(conversations::Vector{Conversation})
     triples_list = map(conversation_to_rdf, conversations)
     all_triples = reduce(vcat, triples_list)
     return serialize_ntriples(all_triples)
 end
-```
+----
 
-## Monitoring
+=== Monitoring
 
-### Logging
+==== Logging
 
-```julia
+[source,julia]
+----
 using Logging
 
 @info "Generating RDF for conversation" conv_id=conv.id num_messages=length(conv.messages)
 @warn "Large conversation detected" conv_id=conv.id size=length(conv.messages)
 @error "Failed to serialize RDF" exception=e
-```
+----
 
-### Profiling
+==== Profiling
 
-```julia
+[source,julia]
+----
 using Profile
 
 @profile for i in 1:1000
@@ -472,21 +493,23 @@ using Profile
 end
 
 Profile.print()
-```
+----
 
-### Benchmarking
+==== Benchmarking
 
-```julia
+[source,julia]
+----
 using BenchmarkTools
 
 @benchmark conversation_to_rdf($sample_conv)
-```
+----
 
-## Advanced Features
+=== Advanced Features
 
-### Graph Embeddings
+==== Graph Embeddings
 
-```julia
+[source,julia]
+----
 using GraphNeuralNetworks
 
 function graph_to_embedding(metagraph::MetaGraph)
@@ -505,11 +528,12 @@ function graph_to_embedding(metagraph::MetaGraph)
     embedding = gnn(graph)
     return embedding
 end
-```
+----
 
-### Knowledge-Augmented ESN
+==== Knowledge-Augmented ESN
 
-```julia
+[source,julia]
+----
 function knowledge_augmented_esn(rules::Vector{LogicRule}, input_dim::Int)
     # Rule-based structured connections
     rule_weights = stack(rule_to_weights.(rules))
@@ -525,20 +549,22 @@ function knowledge_augmented_esn(rules::Vector{LogicRule}, input_dim::Int)
 
     return ESN(reservoir, readout=StandardRidge(1e-6))
 end
-```
+----
 
-## Deployment
+=== Deployment
 
-### As Port Process
+==== As Port Process
 
-```bash
+[source,bash]
+----
 # Run Julia port
 julia --project=/app learning/src/port_interface.jl
-```
+----
 
-### As Service
+==== As Service
 
-```julia
+[source,julia]
+----
 # service.jl
 using HTTP
 
@@ -550,31 +576,34 @@ HTTP.serve(8080) do request
         return HTTP.Response(200, JSON.json(Dict("rdf" => serialize_ntriples(triples))))
     end
 end
-```
+----
 
-## Troubleshooting
+=== Troubleshooting
 
-### Package Installation Fails
+==== Package Installation Fails
 
-```bash
+[source,bash]
+----
 # Clear package cache
 rm -rf ~/.julia/packages
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
-```
+----
 
-### GPU Not Detected
+==== GPU Not Detected
 
-```julia
+[source,julia]
+----
 using CUDA
 CUDA.functional()  # Should return true if GPU available
 
 # Check CUDA version
 CUDA.versioninfo()
-```
+----
 
-### Memory Issues
+==== Memory Issues
 
-```julia
+[source,julia]
+----
 # Use streaming for large datasets
 function stream_process(file_path)
     open(file_path) do io
@@ -584,24 +613,25 @@ function stream_process(file_path)
         end
     end
 end
-```
+----
 
-## References
+=== References
 
-- [Julia Documentation](https://docs.julialang.org/)
-- [Serd.jl](https://github.com/JuliaGraphs/Serd.jl)
-- [ReservoirComputing.jl Paper](https://jmlr.org/papers/v23/21-0945.html)
-- [GraphNeuralNetworks.jl](https://arxiv.org/abs/2412.06354)
-- Research: `/docs/research/julia-rdf-ecosystem.adoc`
-- Research: `/docs/research/julia-reservoir-computing.adoc`
-- Architecture: `/docs/architecture/system-architecture.adoc`
+* https://docs.julialang.org/[Julia Documentation]
+* https://github.com/JuliaGraphs/Serd.jl[Serd.jl]
+* https://jmlr.org/papers/v23/21-0945.html[ReservoirComputing.jl Paper]
+* https://arxiv.org/abs/2412.06354[GraphNeuralNetworks.jl]
+* Research: `+/docs/research/julia-rdf-ecosystem.adoc+`
+* Research: `+/docs/research/julia-reservoir-computing.adoc+`
+* Architecture: `+/docs/architecture/system-architecture.adoc+`
 
-## Next Steps
+=== Next Steps
 
-1. Implement RDF serialization module
-2. Create SPARQL client
-3. Build RDF→MetaGraph converter
-4. Implement basic ESN training
-5. Create KBANN prototype
-6. Integrate with Elixir via port
-7. Test on proving-ground data
+[arabic]
+. Implement RDF serialization module
+. Create SPARQL client
+. Build RDF→MetaGraph converter
+. Implement basic ESN training
+. Create KBANN prototype
+. Integrate with Elixir via port
+. Test on proving-ground data

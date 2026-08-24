@@ -1,0 +1,239 @@
+== Code of Conduct
+
+=== Our Pledge
+
+The Anamnesis project is committed to providing a *welcoming, safe, and
+harassment-free* environment for all contributors, regardless of:
+
+* Experience level (newcomer to expert)
+* Gender identity and expression
+* Sexual orientation
+* Disability (visible or invisible)
+* Personal appearance
+* Body size
+* Race, ethnicity, nationality
+* Age
+* Religion (or lack thereof)
+* Technology choices or opinions
+
+We pledge to act in ways that contribute to an *open, welcoming,
+diverse, inclusive, and healthy* community.
+
+=== Compassionate Code Conduct Pledge (CCCP) Principles
+
+This Code of Conduct is based on *CCCP (Compassionate Code Conduct
+Pledge)* principles, which prioritize:
+
+==== 1. *Emotional Safety Over Efficiency*
+
+We value *people* over productivity. Code reviews, discussions, and
+decision-making should: - Assume good faith - Avoid aggressive or
+dismissive language - Recognize that mistakes are learning opportunities
+- Support experimentation without fear of ridicule
+
+*Examples*: - ✅ "`This approach has a potential issue with X. Consider
+trying Y instead?`" - ❌ "`This is wrong. Did you even read the docs?`"
+
+==== 2. *Reversibility Over Irreversible Change*
+
+We embrace *safe-to-fail* experimentation: - Most decisions can be
+undone or iterated upon - Feature branches protect main from experiments
+- "`Let’s try it and see`" is encouraged when stakes are low - Document
+architectural decisions (ADRs) for important changes
+
+*Reversibility Reduces Anxiety*: Knowing you can roll back makes it
+safer to contribute.
+
+==== 3. *Distributed Authority Over Centralized Control*
+
+* Decisions are made by those doing the work (with maintainer guidance)
+* Multiple perspectives are sought before major changes
+* *TPCF (Tri-Perimeter Contribution Framework)* enables graduated trust
+* Maintainers facilitate, not dictate
+
+==== 4. *Long-term Thinking Over Short-term Gains*
+
+* Sustainable pace > burnout-inducing sprints
+* Maintainability > clever code
+* Documentation debt is real debt
+* We’re building for years, not weeks
+
+=== Our Standards
+
+==== Examples of behavior that contributes to a positive environment:
+
+* *Being respectful* of differing opinions, viewpoints, and experiences
+* *Giving and gracefully accepting* constructive feedback
+* *Accepting responsibility* and apologizing to those affected by our
+mistakes
+* *Focusing on what is best* not just for us as individuals, but for the
+overall community
+* *Showing empathy* towards other community members
+* *Celebrating contributions*, big and small
+* *Assuming good intent* unless proven otherwise
+* *Patience with newcomers* - we were all beginners once
+* *Asking clarifying questions* instead of making assumptions
+* *Using inclusive language* (e.g., "`they`" not "`he`", "`folks`" not
+"`guys`")
+
+==== Examples of unacceptable behavior:
+
+* *Harassment*: Offensive comments related to protected characteristics,
+unwelcome sexual attention, stalking (physical or online), intimidation
+* *Trolling*: Deliberately inflammatory, off-topic, or disruptive
+comments
+* *Personal attacks*: Ad hominem arguments, name-calling, insults
+* *Doxxing*: Publishing someone’s private information without consent
+* *Exclusionary jokes or language*: Sexist, racist, ableist, or
+otherwise discriminatory humor
+* *Unwelcome sexual attention or advances*: Both physical and verbal
+* *Sustained disruption*: Monopolizing discussions, repeatedly derailing
+conversations
+* *Gatekeeping*: "`You’re not a real developer if…`", "`Real programmers
+use…`"
+* *Aggressive behavior*: Shouting (all caps), excessive profanity
+directed at individuals, threats
+
+=== Emotional Temperature Monitoring
+
+We recognize that *developer well-being matters*. If a discussion
+becomes heated:
+
+==== Self-Monitoring
+
+Ask yourself: - Am I feeling defensive or angry? - Is my heart racing or
+am I tensing up? - Would I say this to someone’s face in a calm tone?
+
+*If yes to any*: Take a break. Step away for 10 minutes, an hour, or a
+day. The code will still be there.
+
+==== Intervention
+
+If you observe someone getting heated: - *Gently suggest a break*:
+"`This seems like a good time for a pause. Let’s revisit in a few
+hours?`" - *Ask clarifying questions*: "`Can you help me understand your
+concern?`" - *Redirect to shared goals*: "`We both want X. Let’s focus
+on how to get there.`"
+
+==== Cool-Down Period
+
+For contentious PRs or discussions: - 🔥 *24-hour rule*: If emotions run
+high, pause discussion for 24 hours - 🧊 *Mediation*: Maintainers can
+request a mediator (neutral third party) - ✋ *Lock threads*: Temporary
+lock to prevent escalation (rare, last resort)
+
+=== Scope
+
+This Code of Conduct applies:
+
+* *In project spaces*: GitHub (issues, PRs, discussions), email, chat
+* *Representing the project*: Conferences, social media, official events
+* *Ambiguous cases*: Maintainers will use reasonable judgment
+
+This Code of Conduct does NOT apply: - Personal social media unrelated
+to the project - Private conversations (unless reported by a
+participant)
+
+=== Enforcement
+
+==== Reporting
+
+If you experience or witness unacceptable behavior:
+
+[arabic]
+. *For immediate safety concerns*: Contact your local authorities first
+. *For Code of Conduct violations*:
+* *Email*: [CONDUCT_EMAIL_TO_BE_ADDED]
+* *Private message*: Any maintainer (see MAINTAINERS.md)
+* *Anonymous form*: [FORM_URL_TO_BE_ADDED] (future)
+
+Reports will be kept *confidential* unless you explicitly consent to
+disclosure.
+
+==== What to Include
+
+* *What happened*: Describe the behavior
+* *Where*: Link to GitHub issue/PR/discussion, or describe the venue
+* *When*: Date and time
+* *Who*: Username(s) involved
+* *Impact*: How it affected you or others
+* *Evidence*: Screenshots, quotes, links (if available)
+
+==== Response Timeline
+
+* *Acknowledgment*: Within 24 hours
+* *Investigation*: Within 7 days
+* *Resolution*: Within 14 days (complex cases may take longer)
+
+==== Enforcement Actions
+
+Maintainers will determine consequences based on severity and context.
+Possible actions include:
+
+===== 1. *Correction*
+
+*For*: Minor, isolated incidents (e.g., unintentional offensive
+language)
+
+*Action*: - Private message explaining the issue - Request for apology
+or clarification - No further action if corrected
+
+===== 2. *Warning*
+
+*For*: Repeated minor incidents or a single moderate violation
+
+*Action*: - Public or private warning, depending on context - Documented
+in maintainer records - May include temporary interaction restrictions -
+Second warning may escalate to further action
+
+===== 3. *Temporary Ban*
+
+*For*: Sustained pattern of unacceptable behavior or serious violation
+
+*Action*: - 1-4 week ban from all project interaction (issues, PRs,
+discussions) - Public statement explaining the ban (respecting
+reporter’s privacy) - Automatic if two formal warnings issued within 6
+months
+
+===== 4. *Permanent Ban*
+
+*For*: Egregious violations (harassment, threats, doxxing) or repeat
+offenses after temporary ban
+
+*Action*: - Permanent removal from all project spaces - GitHub block,
+email unsubscribe, etc. - Public statement (respecting reporter’s
+privacy) - Escalate to platform (GitHub) if ToS violation
+
+==== Appeals
+
+You may appeal enforcement actions by emailing
+[CONDUCT_EMAIL_TO_BE_ADDED] within 14 days. Appeals will be reviewed by
+a different maintainer than the one who issued the action.
+
+=== Attribution & License
+
+This Code of Conduct is adapted from:
+
+* *Compassionate Code Conduct Pledge (CCCP)* [Hyperpolymath original
+work]
+* *Contributor Covenant v2.1*:
+https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
+* *Citizen Code of Conduct*: http://citizencodeofconduct.org/
+* *Ada Initiative’s Anti-Harassment Policy*:
+http://geekfeminism.wikia.com/wiki/Conference_anti-harassment/Policy
+
+Licensed under https://creativecommons.org/licenses/by/4.0/[Creative
+Commons Attribution 4.0 International].
+
+=== Questions?
+
+* *Clarifications*: Open a GitHub Discussion (Q&A category)
+* *Private questions*: Email [CONDUCT_EMAIL_TO_BE_ADDED]
+* *Suggest improvements*: Submit a PR to this document
+
+'''''
+
+*Remember*: We’re all here because we love building things with code.
+Let’s keep it enjoyable for everyone.
+
+Last updated: 2025-11-22
