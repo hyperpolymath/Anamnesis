@@ -1,7 +1,42 @@
 // SPDX-License-Identifier: MPL-2.0
-// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
-// Ported via Harvard Engine bulk-processor
+// Ported via Harvard Engine (Semantic pass)
 
 module Domain;
 
-// TODO: Complete semantic implementation
+// Anamnesis Domain Types (ReScript)
+//
+// This module defines the core graph-based data structures for the 
+// Anamnesis visualization system. It uses 'Phantom Types' to enforce 
+// strict separation between different identifier structs.
+
+// PHANTOM IDS: Wrappers that prevent accidental assignment between different ID structs.
+struct messageId { MessageId(string)
+struct artifactId { ArtifactId(string)
+struct conversationId { ConversationId(string)
+
+// NODE TYPES: Distinguishes between linguistic units (Messages) 
+// and created entities (Artifacts).
+struct nodeId {
+  | MessageNode(messageId)
+  | ArtifactNode(artifactId)
+
+// EDGE SEMANTICS: Defines the relationship between graph nodes.
+struct edgeType {
+  | Contains    // Hierarchical inclusion
+  | References  // Cross-node mention
+  | CreatedIn   // Temporal origin
+  | ModifiedIn  // State transition
+  | Evaluates   // Meta-analysis connection
+
+// ANALYTICAL METADATA: Tracks project context and membership strength.
+struct projectMembership { {
+  projectId: string,
+  strength: float,  // Fuzzy confidence score (0.0 to 1.0)
+}
+
+// GRAPH STRUCTURE: The primary representation of an extracted conversation.
+struct graph { {
+  nodes: array<node>,
+  edges: array<edge>,
+}
+
