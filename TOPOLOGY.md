@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: MPL-2.0 -->
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
 <!-- TOPOLOGY.md — Project architecture map and completion dashboard -->
 <!-- Last updated: 2026-02-19 -->
 
@@ -40,7 +40,7 @@
                                             │
                                             ▼
                         ┌─────────────────────────────────────────┐
-                        │        VISUALIZATION (RESCRIPT)         │
+                        │        VISUALIZATION (AFFINESCRIPT)         │
                         │      (Reagraph, Timeline, React)        │
                         └─────────────────────────────────────────┘
 ```
@@ -55,7 +55,7 @@ PIPELINE STAGES
   Orchestrator (Elixir)             ██████████ 100%    Port infrastructure stable
   Reasoning (λProlog)               ████░░░░░░  40%    Lifecycle rules in progress
   Analytics (Julia)                 ████████░░  80%    RDF and ESN modules ready
-  Visualization (ReScript)          ██████░░░░  60%    Domain types & color mixing
+  Visualization (AffineScript)          ██████░░░░  60%    Domain types & color mixing
 
 INFRASTRUCTURE
   Virtuoso Integration              ████░░░░░░  40%    Storage backend pending

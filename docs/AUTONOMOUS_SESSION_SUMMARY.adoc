@@ -38,9 +38,9 @@ All research documents created in AsciiDoc format with academic rigor:
    * Stick with Virtuoso + SPARQL as planned
    * Detailed comparison tables and use case analysis
 
-4. **ReScript Visualization** (`docs/research/rescript-visualization.adoc`)
+4. **AffineScript Visualization** (`docs/research/affinescript-visualization.adoc`)
    * Reagraph (WebGL): 1000-5000 nodes, 2D/3D force-directed
-   * rescript-recharts: Mature bindings for timelines
+   * affinescript-recharts: Mature bindings for timelines
    * Type safety benefits (phantom types, variants)
    * Custom bindings strategy for JS libraries
 
@@ -79,7 +79,7 @@ All research documents created in AsciiDoc format with academic rigor:
    * Orchestrator: Elixir OTP, supervision trees, port communication
    * Reasoning: λProlog/ELPI, HOAS, integration patterns
    * Learning: Julia modules, RDF generation, reservoir computing
-   * Visualization: ReScript, type safety, WebGL rendering
+   * Visualization: AffineScript, type safety, WebGL rendering
 
 === Starter Code (Production-Ready Scaffolding)
 
@@ -147,10 +147,10 @@ All research documents created in AsciiDoc format with academic rigor:
 - Example queries and data
 - Ready for ELPI embedding in OCaml
 
-==== Visualization (ReScript)
+==== Visualization (AffineScript)
 
 **Files Created**:
-- `visualization/bsconfig.json` - ReScript compiler config
+- `visualization/bsconfig.json` - AffineScript compiler config
 - `visualization/package.json` - npm dependencies
 - `visualization/src/types/Domain.res` - Type-safe domain model
 - `visualization/src/transforms/ColorMixing.res` - Fuzzy category colors
@@ -170,7 +170,7 @@ All research documents created in AsciiDoc format with academic rigor:
 - **Starter Code Files**: 20+
 - **Lines of Code**: ~17,000+
 - **Component READMEs**: 6
-- **Languages**: OCaml, Elixir, Julia, λProlog, ReScript
+- **Languages**: OCaml, Elixir, Julia, λProlog, AffineScript
 - **Total Deliverables**: 35+ files
 
 == Technology Stack Summary
@@ -200,7 +200,7 @@ All research documents created in AsciiDoc format with academic rigor:
 | RDF native, named graphs, RDFS/OWL reasoning
 
 | **Visualization**
-| ReScript + React
+| AffineScript + React
 | Type safety, functional, WebGL (Reagraph), kill JavaScript goal
 |===
 
@@ -238,7 +238,7 @@ All research documents created in AsciiDoc format with academic rigor:
    * OCaml: Run `dune build` to generate ATD types
    * Elixir: `mix deps.get && mix compile`
    * Julia: `Pkg.instantiate()`
-   * ReScript: `npm install && npm run res:build`
+   * AffineScript: `npm install && npm run res:build`
 
 3. **Complete Claude parser**
    * Add missing dependencies (ptime, re)
@@ -261,7 +261,7 @@ All research documents created in AsciiDoc format with academic rigor:
 - Additional format parsers (ChatGPT, Mistral, Git)
 - λProlog cross-conversation linking
 - Reservoir computing training pipeline
-- ReScript visualization components (Reagraph bindings)
+- AffineScript visualization components (Reagraph bindings)
 - Phoenix HTTP API
 - Integration testing on proving ground
 
@@ -320,7 +320,7 @@ This autonomous session delivered:
 
 **Risks Mitigated**:
 - NO PYTHON constraint respected throughout
-- Type safety enforced at compile time (OCaml, ReScript)
+- Type safety enforced at compile time (OCaml, AffineScript)
 - Fault tolerance via OTP supervision
 - Standards compliance (RDF, SPARQL, W3C)
 

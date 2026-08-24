@@ -30,7 +30,7 @@ Anamnesis follows a **defense-in-depth** approach across multiple dimensions:
 ### 3. Type Safety
 - **OCaml**: Strong static typing, no runtime type errors
 - **Elixir**: Dialyzer typespecs, pattern matching exhaustiveness checks
-- **ReScript**: Compile-time type guarantees, phantom types prevent ID mixing
+- **AffineScript**: Compile-time type guarantees, phantom types prevent ID mixing
 - **Julia**: Optional type annotations, multiple dispatch safety
 
 ### 4. Memory Safety

@@ -21,7 +21,7 @@ Anamnesis prioritizes local-first, offline-capable operation for:
 | **Orchestrator (Elixir)** | ✅ 100% Offline | Local process orchestration only |
 | **Reasoning (λProlog)** | ✅ 100% Offline | Logic programming, no external calls |
 | **Learning (Julia)** | ✅ 100% Offline | RDF generation, reservoir computing |
-| **Visualization (ReScript)** | ✅ 100% Offline | Client-side rendering, no CDNs |
+| **Visualization (AffineScript)** | ✅ 100% Offline | Client-side rendering, no CDNs |
 | **Virtuoso (RDF Store)** | ✅ 100% Offline | Local triplestore, SPARQL queries |
 
 ### ⚠️ Optional Online Features
@@ -107,7 +107,7 @@ MIX_ENV=prod mix deps.compile
 cd ../learning
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
-# Setup ReScript (use bundled node_modules)
+# Setup AffineScript (use bundled node_modules)
 cd ../visualization
 # Already bundled, no npm install needed
 
@@ -335,10 +335,10 @@ npm ci --offline
 
 ### Reproducible Builds
 
-Use Nix flakes (planned) for bit-for-bit reproducible builds:
+Use Guix flakes (planned) for bit-for-bit reproducible builds:
 
-```nix
-# flake.nix (future)
+```guix
+# flake.guix (future)
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
   outputs = { self, nixpkgs }: {
@@ -480,7 +480,7 @@ Anamnesis passes **offline-first certification**:
 
 ## Future Improvements
 
-- [ ] Nix flakes for fully reproducible builds
+- [ ] Guix flakes for fully reproducible builds
 - [ ] Embedded database option (RocksDB/SQLite) for single-binary deployment
 - [ ] Standalone binary distribution (OCaml → native, Elixir → escript)
 - [ ] Offline package registry bundled in release

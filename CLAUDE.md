@@ -18,7 +18,7 @@ This file provides guidance for Claude Code when working with this project.
 - **Virtuoso + SPARQL** (knowledge graph) - RDF storage and querying
 - **Julia** (RDF manipulation, KBANN, reservoir computing) - Never Python per user constraint
 - **λProlog/Teyjus** (meta-reasoning) - Conversation/artifact reasoning
-- **ReScript** (visualization) - Type safety, functional, eventual JS replacement
+- **AffineScript** (visualization) - Type safety, functional, eventual JS replacement
 
 ### Constraints
 - ❌ **NO PYTHON** - Use Julia for scientific computing
@@ -42,7 +42,7 @@ This file provides guidance for Claude Code when working with this project.
 ├── orchestrator/               # Elixir orchestration layer
 ├── reasoning/                  # λProlog meta-reasoning
 ├── learning/                   # Julia KBANN/reservoir computing
-├── visualization/              # ReScript UI components
+├── visualization/              # AffineScript UI components
 ├── proving-ground/             # Test workspace (zotero-voyant-export copy)
 └── docs/                       # Documentation (AsciiDoc preferred)
 ```
@@ -74,7 +74,7 @@ This file provides guidance for Claude Code when working with this project.
 
 ### Code Style
 - Functional paradigm throughout
-- Type safety (OCaml, ReScript, Elixir typespecs)
+- Type safety (OCaml, AffineScript, Elixir typespecs)
 - Clear naming conventions
 - Small, focused functions
 - Parser combinators for OCaml parsing
@@ -97,7 +97,7 @@ This file provides guidance for Claude Code when working with this project.
    - ✅ Julia RDF libraries (Serd.jl recommended)
    - ✅ Julia reservoir computing (ReservoirComputing.jl)
    - ✅ PuppyGraph evaluation (stick with Virtuoso)
-   - ✅ ReScript visualization (Reagraph, recharts)
+   - ✅ AffineScript visualization (Reagraph, recharts)
 3. ⬜ Copy proving ground: Clone zotero-voyant-export to `proving-ground/`
 4. ⬜ Create maximal handover document (necessary AND sufficient version)
 5. ✅ Setup project structure directories
@@ -113,7 +113,7 @@ This file provides guidance for Claude Code when working with this project.
 
 ## Related Projects
 
-- **ReScript Evangeliser** - Learning curve synergies with ReScript
+- **AffineScript Evangeliser** - Learning curve synergies with AffineScript
 - **Zotero:NSAI** - Neurosymbolic AI integration
 - **Fogbinder** - Uncertainty-as-feature framework
 
@@ -135,7 +135,7 @@ Relevant concepts to user's research/journalism work:
 
 ### User Preferences
 - OCaml/Haskell hybrid approach for parsing
-- ReScript for visualization (type safety, functional, kill JS)
+- AffineScript for visualization (type safety, functional, kill JS)
 - Academic rigor in documentation and design
 - Question assumptions, provide rigorous analysis
 

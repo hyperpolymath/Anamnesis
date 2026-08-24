@@ -24,7 +24,7 @@ _(None yet - accepting applications! See "Becoming a Maintainer" below)_
 - **Orchestrator (Elixir)**: Maintainer needed
 - **Reasoning (λProlog)**: Maintainer needed
 - **Learning (Julia)**: Maintainer needed
-- **Visualization (ReScript)**: Maintainer needed
+- **Visualization (AffineScript)**: Maintainer needed
 - **Documentation**: Maintainer needed
 - **Community**: Maintainer needed
 

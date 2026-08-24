@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+// Ported via Harvard Engine (Semantic pass)
+
+module Domain_test;
+
 open Jest
 open Expect
 
@@ -5,24 +10,24 @@ describe("Domain Types", () => {
   open Domain
 
   test("MessageId construction", () => {
-    let msgId = MessageId("msg-001")
+    fn msgId = MessageId("msg-001")
     expect(msgId)->toBeTruthy
   })
 
   test("ArtifactId construction", () => {
-    let artId = ArtifactId("art-001")
+    fn artId = ArtifactId("art-001")
     expect(artId)->toBeTruthy
   })
 
   test("NodeId variants", () => {
-    let messageNode = MessageNode(MessageId("msg-001"))
-    let artifactNode = ArtifactNode(ArtifactId("art-001"))
+    fn messageNode = MessageNode(MessageId("msg-001"))
+    fn artifactNode = ArtifactNode(ArtifactId("art-001"))
 
     expect((messageNode, artifactNode))->toBeTruthy
   })
 
   test("ProjectMembership structure", () => {
-    let membership: projectMembership = {
+    fn membership: projectMembership = {
       projectId: "anamnesis",
       strength: 0.8,
     }
@@ -32,7 +37,7 @@ describe("Domain Types", () => {
   })
 
   test("Message record structure", () => {
-    let msg: message = {
+    fn msg: message = {
       id: MessageId("msg-001"),
       role: User,
       content: "Hello, Claude",
@@ -47,11 +52,11 @@ describe("Domain Types", () => {
   })
 
   test("Artifact record structure", () => {
-    let artifact: artifact = {
+    fn artifact: artifact = {
       id: ArtifactId("art-001"),
       artifactType: Code,
       title: Some("example.res"),
-      content: "let x = 1",
+      content: "fn x = 1",
       language: Some("rescript"),
       lifecycleState: Created,
       projectMemberships: [{projectId: "anamnesis", strength: 1.0}],
@@ -62,24 +67,24 @@ describe("Domain Types", () => {
   })
 
   test("LifecycleState variants", () => {
-    let states = [Created, Modified, Removed, Evaluated]
+    fn states = [Created, Modified, Removed, Evaluated]
     expect(Array.length(states))->toEqual(4)
   })
 
   test("Role variants", () => {
-    let userRole = User
-    let assistantRole = Assistant
+    fn userRole = User
+    fn assistantRole = Assistant
 
     expect((userRole, assistantRole))->toBeTruthy
   })
 
   test("ArtifactType variants", () => {
-    let types = [Code, Document, Image, Data, Other]
-    expect(Array.length(types))->toEqual(5)
+    fn structs = [Code, Document, Image, Data, Other]
+    expect(Array.length(structs))->toEqual(5)
   })
 
   test("Conversation structure with multiple messages", () => {
-    let conv: conversation = {
+    fn conv: conversation = {
       id: "conv-001",
       platform: Some("Claude"),
       timestamp: 1732272000.0,
@@ -109,7 +114,7 @@ describe("Domain Types", () => {
   })
 
   test("Multi-project membership", () => {
-    let memberships: array<projectMembership> = [
+    fn memberships: array<projectMembership> = [
       {projectId: "anamnesis", strength: 0.8},
       {projectId: "zotero-voyant", strength: 0.3},
       {projectId: "rescript-evangeliser", strength: 0.1},
@@ -117,12 +122,12 @@ describe("Domain Types", () => {
 
     expect(Array.length(memberships))->toEqual(3)
 
-    let totalStrength = memberships->Array.reduce(0.0, (acc, m) => acc +. m.strength)
+    fn totalStrength = memberships->Array.reduce(0.0, (acc, m) => acc +. m.strength)
     expect(totalStrength)->toBeCloseTo(1.2)
   })
 
   test("Edge structure", () => {
-    let edge: edge = {
+    fn edge: edge = {
       source: MessageNode(MessageId("msg-1")),
       target: ArtifactNode(ArtifactId("art-1")),
       edgeType: CreatesArtifact,
@@ -132,18 +137,18 @@ describe("Domain Types", () => {
   })
 
   test("EdgeType variants", () => {
-    let types = [
+    fn structs = [
       CreatesArtifact,
       ModifiesArtifact,
       ReferencesArtifact,
       ResponseTo,
       SameProject,
     ]
-    expect(Array.length(types))->toEqual(5)
+    expect(Array.length(structs))->toEqual(5)
   })
 
   test("Graph structure", () => {
-    let graph: graph = {
+    fn graph: graph = {
       nodes: [
         MessageNode(MessageId("msg-1")),
         ArtifactNode(ArtifactId("art-1")),
@@ -162,3 +167,4 @@ describe("Domain Types", () => {
     expect(Array.length(graph.edges))->toEqual(1)
   })
 })
+

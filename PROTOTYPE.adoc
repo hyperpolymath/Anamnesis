@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= ⚠️ Prototype status, disclaimers & how this fits the ethics work
+
+[.lead]
+*Anamnesis is an early-stage research prototype, not a product.* It explores
+one idea — parsing tangled multi-LLM conversation threads back into clean,
+project-bucketed knowledge — and shares it openly for critique.
+
+== What "prototype" means here
+
+* *Experimental.* The multi-language pipeline (OCaml parser, Elixir
+  orchestrator, …), the ABI/FFI surface, data formats and extraction
+  heuristics are all provisional and may change or be abandoned.
+* *Unproven.* Extraction and reconciliation are best-effort. It will miss
+  things, mis-bucket things, and mis-attribute things.
+* *No warranty.* Provided "as is", with no warranty of any kind, to the
+  extent permitted by the licence. See `LICENSE` / `NOTICE`.
+
+== Data & privacy disclaimer (please read)
+
+Anamnesis ingests *conversation logs* — which routinely contain other
+people's words, secrets, and personal data. Handle accordingly.
+
+* *Consent and provenance matter.* Conversations may include third parties
+  who never agreed to be parsed, summarised, or re-shared. Only feed in data
+  you have the right to process, and don't misrepresent where a summary came
+  from.
+* *Secrets leak through logs.* Chat histories frequently contain API keys,
+  tokens and credentials. Treat all inputs and outputs as sensitive; do not
+  publish generated summaries without review.
+* *Summaries can distort.* Automated reconciliation can drop the caveats and
+  keep the confident-sounding claim. Don't treat Anamnesis output as an
+  authoritative record of what was decided or why.
+* *Not security-audited.* Do not point it at sensitive data in production
+  without your own review.
+
+== Interest and collaboration warmly welcome
+
+This is shared to *invite scrutiny*, not to advertise a finished thing.
+
+* Open an *issue* or *discussion* with failure cases, privacy concerns, or
+  "it should also capture…".
+* Critique of the *ethics framing* (below) is especially valued.
+* See `CONTRIBUTING` and `CODE_OF_CONDUCT` before opening a PR.
+
+== Where the ethics thinking lives
+
+Turning private conversations into durable, searchable knowledge is an
+*ethics* act — about consent, provenance, and honest summarisation. The
+estate develops that reasoning in dedicated sibling projects, and Anamnesis
+defers to them:
+
+[cols="1,3",options="header"]
+|===
+| Project | Role in the ethics picture
+
+| https://github.com/hyperpolymath/phronesis[*Phronesis*]
+| A "practical wisdom" language — the estate's substrate for normative
+  reasoning, distinct from a model's raw knowledge.
+
+| https://github.com/hyperpolymath/phronesiser[*Phronesiser*]
+| Adds *normative ethical constraints* to AI agents via Phronesis — the home
+  for rules like "don't retain or re-share what you weren't given the right
+  to".
+
+| https://github.com/hyperpolymath/vexometer[*Vexometer*]
+| The *interaction-ethics / UX* side: an "Irritation Surface Analyser" for
+  the human cost of tools. A knowledge system that buries people in noisy or
+  wrong summaries imposes a real cost — this is how that gets named.
+
+| https://github.com/hyperpolymath/palimpsest-license[*Palimpsest License*]
+| The ethical-use licence family this repo ships under; its Exhibit A asks
+  for transparency in automated processing and honest provenance — directly
+  relevant to summarising conversations.
+|===
+
+For the ethics rationale specifically, start with *Phronesiser* (the
+*normative* side) and *Vexometer* (the *human-experience* side).

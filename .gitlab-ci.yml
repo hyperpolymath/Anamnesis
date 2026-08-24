@@ -1,5 +1,5 @@
 # GitLab CI/CD Pipeline for Anamnesis
-# Multi-language project (OCaml, Elixir, Julia, ReScript)
+# Multi-language project (OCaml, Elixir, Julia, AffineScript)
 
 stages:
   - setup
@@ -80,7 +80,7 @@ setup:julia:
       - learning/**/*
       - .gitlab-ci.yml
 
-setup:rescript:
+setup:affinescript:
   stage: setup
   image: node:18-alpine
   script:
@@ -157,7 +157,7 @@ build:visualization:
   stage: build
   image: node:18-alpine
   dependencies:
-    - setup:rescript
+    - setup:affinescript
   script:
     - cd visualization
     - npm run res:build
@@ -287,7 +287,7 @@ security:npm-audit:
   stage: security
   image: node:18-alpine
   dependencies:
-    - setup:rescript
+    - setup:affinescript
   script:
     - cd visualization
     - npm audit --audit-level=high
@@ -378,10 +378,8 @@ rsr:documentation-check:
 #     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
 # .nix_template: &nix_template
-#   image: nixos/nix:latest
+#   image: nixos/guix:latest
 #   before_script:
-#     - nix-env -i cachix
-#     - cachix use anamnesis
 
 # Pages deployment (static site hosting)
 # pages:

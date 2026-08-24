@@ -54,7 +54,7 @@ This project adheres to a Code of Conduct based on **CCCP (Compassionate Code Co
 
 Anamnesis is currently:
 - **Research-grade** (not production-ready)
-- **Multi-language complexity** (OCaml, Elixir, Julia, λProlog, ReScript)
+- **Multi-language complexity** (OCaml, Elixir, Julia, λProlog, AffineScript)
 - **Experimental** (testing novel approaches)
 - **Pre-Milestone 1** (foundational phase)
 
@@ -89,7 +89,7 @@ We'll move to **Perimeter 3 (Community Sandbox)** when:
 
 - **Proving Ground Testing**: Copy zotero-voyant-export, run end-to-end tests (after Milestone 1)
 - **Additional Format Parsers**: ChatGPT, Mistral, Git logs (OCaml proficiency required)
-- **Visualization Components**: ReScript components for Reagraph (after data pipeline works)
+- **Visualization Components**: AffineScript components for Reagraph (after data pipeline works)
 
 ## Development Setup
 
@@ -99,13 +99,13 @@ We'll move to **Perimeter 3 (Community Sandbox)** when:
 - **OCaml** 5.0+ (install via [OPAM](https://opam.ocaml.org/))
 - **Elixir** 1.15+ (install via [asdf](https://asdf-vm.com/) or package manager)
 - **Julia** 1.10+ (install via [juliaup](https://github.com/JuliaLang/juliaup))
-- **Node.js** 18+ (for ReScript)
+- **Node.js** 18+ (for AffineScript)
 - **Virtuoso** 7+ (Docker recommended)
 
 **Build Tools:**
 - **Dune** 3.0+ (OCaml build system)
 - **Just** (command runner - install from https://github.com/casey/just)
-- **Nix** (optional, for reproducible builds)
+- **Guix** (optional, for reproducible builds)
 
 ### Quick Start
 
@@ -135,7 +135,7 @@ See component READMEs for detailed setup:
 - `orchestrator/README.md` - Elixir orchestrator setup
 - `reasoning/README.md` - λProlog/ELPI setup
 - `learning/README.md` - Julia analytics setup
-- `visualization/README.md` - ReScript visualization setup
+- `visualization/README.md` - AffineScript visualization setup
 
 ## Contribution Workflow
 
@@ -242,10 +242,10 @@ Then open a Pull Request on GitHub with:
 - **Documentation**: Comment clauses, especially complex rules
 - **Modularity**: Separate concerns into different files
 
-#### ReScript
+#### AffineScript
 
-- **Style**: Follow [ReScript conventions](https://rescript-lang.org/docs/manual/latest/introduction)
-- **Formatting**: Use `rescript format`
+- **Style**: Follow [AffineScript conventions](https://affinescript-lang.org/docs/manual/latest/introduction)
+- **Formatting**: Use `affinescript format`
 - **Naming**: `camelCase` for values/functions, `PascalCase` for modules/types
 - **Documentation**: JSDoc comments for exported functions
 - **Phantom Types**: Use for ID safety (e.g., `MessageId`, `ArtifactId`)
@@ -315,7 +315,7 @@ using AnamnesisAnalytics
 end
 ```
 
-#### ReScript (Jest)
+#### AffineScript (Jest)
 
 ```javascript
 // __tests__/ColorMixing.test.js

@@ -18,7 +18,7 @@
 - **Julia**: Type annotations throughout
   - RDF module fully typed
   - Port interface typed
-- **ReScript**: Strong static typing with phantom types
+- **AffineScript**: Strong static typing with phantom types
   - Domain.res uses phantom types to prevent ID mixing
   - Type-safe color mixing
 - **λProlog**: Typed logic programming
@@ -28,7 +28,7 @@
 - **OCaml**: Memory-safe (GC), no manual memory management
 - **Elixir**: Memory-safe (BEAM VM), process isolation
 - **Julia**: Memory-safe (GC)
-- **ReScript**: Memory-safe (compiles to JavaScript)
+- **AffineScript**: Memory-safe (compiles to JavaScript)
 - **Verification**: `grep -r unsafe` finds zero unsafe blocks across all components
 - **Status**: 100% memory-safe, appropriate choice for high-level application
 
@@ -39,7 +39,7 @@
   - Orchestrator (Elixir): Local process orchestration
   - Reasoning (λProlog): Logic programming, no external calls
   - Learning (Julia): RDF generation, local SPARQL
-  - Visualization (ReScript): Client-side rendering
+  - Visualization (AffineScript): Client-side rendering
   - Virtuoso: Local triplestore deployment
 - **Features**:
   - Dependency vendoring for all languages
@@ -79,10 +79,10 @@
 - ✅ **Julia Learning**:
   - `learning/test/runtests.jl` - RDF generation, N-Triples serialization, port interface
   - Framework: Test.jl
-- ✅ **ReScript Visualization**:
+- ✅ **AffineScript Visualization**:
   - `visualization/src/__tests__/Domain_test.res` - phantom types, domain model
   - `visualization/src/__tests__/ColorMixing_test.res` - color blending, fuzzy membership
-  - Framework: Jest (rescript-jest)
+  - Framework: Jest (affinescript-jest)
 
 **Status**: Ready for execution once dependencies installed
 
@@ -91,7 +91,7 @@
 - ✅ OCaml: `parser/dune-project`, `parser/dune`
 - ✅ Elixir: `orchestrator/mix.exs`
 - ✅ Julia: `learning/Project.toml`
-- ✅ ReScript: `visualization/package.json`, `bsconfig.json`
+- ✅ AffineScript: `visualization/package.json`, `bsconfig.json`
 - ✅ **Unified Build**: `justfile` with 30+ recipes for all components
   - setup-all, build-all, test, lint, format
   - rsr-check, validate, docs, security-scan
@@ -111,7 +111,7 @@
 
 **Security Practices:**
 - Port-based process isolation (Erlang fault tolerance)
-- Type-safe parsing (OCaml, ReScript)
+- Type-safe parsing (OCaml, AffineScript)
 - No unsafe code blocks
 - Local-first, no external data transmission
 - Dependency audit in Justfile (`just security-scan`)
@@ -177,7 +177,7 @@
 **Complete GitLab CI Pipeline:**
 - ✅ `.gitlab-ci.yml` - Multi-language CI/CD
   - **Stages**: setup, build, test, lint, security, rsr-compliance, deploy
-  - **Components**: OCaml (dune), Elixir (mix), Julia, ReScript (npm)
+  - **Components**: OCaml (dune), Elixir (mix), Julia, AffineScript (npm)
   - **Security**: Dependency audits (opam, hex, npm)
   - **RSR**: Automated compliance verification
   - **Docker**: Cached builds, parallel jobs
@@ -241,7 +241,7 @@
 - ✅ OCaml: test_generic_conversation.ml, test_claude_parser.ml (Alcotest)
 - ✅ Elixir: parser_port_test.exs, ingestion_pipeline_test.exs (ExUnit)
 - ✅ Julia: runtests.jl (Test.jl)
-- ✅ ReScript: Domain_test.res, ColorMixing_test.res (Jest)
+- ✅ AffineScript: Domain_test.res, ColorMixing_test.res (Jest)
 - 7/7 test files created, ready for execution
 
 **Offline-First (40% → 100%)**:
@@ -276,7 +276,7 @@
 5. Validate with proving ground (zotero-voyant-export)
 
 **Future Enhancements:**
-1. Nix flakes for reproducible builds
+1. Guix flakes for reproducible builds
 2. Increase test coverage to 80%+
 3. Add property-based testing (qcheck for OCaml)
 4. Implement remaining format parsers (ChatGPT, Mistral, Git)

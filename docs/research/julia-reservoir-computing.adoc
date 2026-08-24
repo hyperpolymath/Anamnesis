@@ -1385,7 +1385,7 @@ Predictions → back to Virtuoso
            └───────────────────────┘
                       ↓
            ┌───────────────────────┐
-           │  ReScript Frontend    │
+           │  AffineScript Frontend    │
            │  (Visualization)      │
            └───────────────────────┘
 ----
@@ -1469,7 +1469,7 @@ Julia parsing:
 
 4. Export predictions:
    - RDF triples → Virtuoso
-   - JSON → ReScript frontend visualization
+   - JSON → AffineScript frontend visualization
 
 5. Feedback:
    - Update λProlog rules based on prediction errors
