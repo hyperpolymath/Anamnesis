@@ -1,26 +1,28 @@
-# Reasoning Component (λProlog/ELPI)
+== Reasoning Component (λProlog/ELPI)
 
-Meta-reasoning about conversation structure, artifact lifecycles, and cross-conversation relationships using higher-order logic programming.
+Meta-reasoning about conversation structure, artifact lifecycles, and
+cross-conversation relationships using higher-order logic programming.
 
-## Purpose
+=== Purpose
 
-Use λProlog's Higher-Order Abstract Syntax (HOAS) and meta-reasoning capabilities to:
+Use λProlog’s Higher-Order Abstract Syntax (HOAS) and meta-reasoning
+capabilities to:
 
-- Track artifact lifecycle state machines
-- Detect multi-category membership (fuzzy boundaries)
-- Resolve cross-conversation fragment references
-- Identify conversation contamination
-- Support episodic memory queries
+* Track artifact lifecycle state machines
+* Detect multi-category membership (fuzzy boundaries)
+* Resolve cross-conversation fragment references
+* Identify conversation contamination
+* Support episodic memory queries
 
-## Technology Stack
+=== Technology Stack
 
-- **ELPI** 2.0.6+ - Embeddable λProlog interpreter (OCaml-based)
-- **Teyjus** 2.1.1 (alternative standalone implementation)
-- **OCaml** 5.0+ - For embedding ELPI
+* *ELPI* 2.0.6+ - Embeddable λProlog interpreter (OCaml-based)
+* *Teyjus* 2.1.1 (alternative standalone implementation)
+* *OCaml* 5.0+ - For embedding ELPI
 
-## Directory Structure
+=== Directory Structure
 
-```
+....
 reasoning/
 ├── core/
 │   ├── types.elpi              # Type definitions
@@ -47,15 +49,17 @@ reasoning/
 ├── reasoner_port.ml            # Port executable
 ├── dune
 └── README.md                   # This file
-```
+....
 
-## Key Concepts
+=== Key Concepts
 
-### Higher-Order Abstract Syntax (HOAS)
+==== Higher-Order Abstract Syntax (HOAS)
 
-λProlog uses the meta-language's binding mechanisms for object-language bindings. This makes representing conversation context natural:
+λProlog uses the meta-language’s binding mechanisms for object-language
+bindings. This makes representing conversation context natural:
 
-```prolog
+[source,prolog]
+----
 % Conversation with nested context
 conversation C Msgs :-
     pi msg\ (
@@ -67,24 +71,26 @@ conversation C Msgs :-
 artifact_reference MsgID ArtifactID :-
     within_context C MsgID,
     created_in C ArtifactID.
-```
+----
 
-### Hypothetical Reasoning
+==== Hypothetical Reasoning
 
-Use `=>` for assumptions:
+Use `+=>+` for assumptions:
 
-```prolog
+[source,prolog]
+----
 % What if we categorize this conversation differently?
 test_recategorization Conv OldCat NewCat Impact :-
     belongs_to Conv OldCat primary,
     (belongs_to Conv NewCat primary => compute_impact Conv Impact).
-```
+----
 
-### Typed Logic Programming
+==== Typed Logic Programming
 
 λProlog has static polymorphic typing:
 
-```prolog
+[source,prolog]
+----
 type conversation   -> type.
 type message        -> type.
 type artifact       -> type.
@@ -92,13 +98,14 @@ type state          -> type.
 
 type belongs_to     conversation -> category -> membership_type -> prop.
 type has_state      artifact -> state -> timestamp -> prop.
-```
+----
 
-## Building
+=== Building
 
-### Install ELPI (OCaml-based)
+==== Install ELPI (OCaml-based)
 
-```bash
+[source,bash]
+----
 # Via OPAM
 opam install elpi
 
@@ -107,11 +114,12 @@ git clone https://github.com/LPCIC/elpi.git
 cd elpi
 make
 make install
-```
+----
 
-### Install Teyjus (Alternative)
+==== Install Teyjus (Alternative)
 
-```bash
+[source,bash]
+----
 # Download from https://teyjus.cs.umn.edu/
 wget https://github.com/teyjus/teyjus/releases/download/v2.1.1/teyjus-2.1.1.tar.gz
 tar xzf teyjus-2.1.1.tar.gz
@@ -119,20 +127,22 @@ cd teyjus-2.1.1
 ./configure
 make
 sudo make install
-```
+----
 
-### Build Reasoner Port
+==== Build Reasoner Port
 
-```bash
+[source,bash]
+----
 cd reasoning
 dune build
-```
+----
 
-## Usage
+=== Usage
 
-### Standalone ELPI
+==== Standalone ELPI
 
-```bash
+[source,bash]
+----
 # Interactive
 elpi
 
@@ -142,11 +152,12 @@ elpi -load lifecycle/artifact_states.elpi
 # Query
 ?- current_state artifact_123 1732291200 State.
 State = modified.
-```
+----
 
-### Embedded in OCaml
+==== Embedded in OCaml
 
-```ocaml
+[source,ocaml]
+----
 (* elpi_interface.ml *)
 open Elpi.API
 
@@ -161,22 +172,24 @@ let () =
       Printf.printf "State: %s\n" state
   | Execute.Failure ->
       Printf.printf "No solution\n"
-```
+----
 
-### Via Port from Elixir
+==== Via Port from Elixir
 
-```elixir
+[source,elixir]
+----
 # In Elixir orchestrator
 {:ok, state} = Anamnesis.Ports.LambdaPrologPort.query(
   "current_state artifact_123 1732291200 State"
 )
-```
+----
 
-## Core Modules
+=== Core Modules
 
-### Artifact Lifecycle Tracking
+==== Artifact Lifecycle Tracking
 
-```prolog
+[source,prolog]
+----
 % lifecycle/artifact_states.elpi
 
 % State definitions
@@ -214,11 +227,12 @@ check_transitions [_].
 check_transitions [event S1 _ _, event S2 _ _ | Rest] :-
     valid_transition S1 S2,
     check_transitions [event S2 _ _ | Rest].
-```
+----
 
-### Fuzzy Multi-Category Membership
+==== Fuzzy Multi-Category Membership
 
-```prolog
+[source,prolog]
+----
 % categorization/fuzzy_membership.elpi
 
 kind membership_type type.
@@ -251,11 +265,12 @@ normalized_membership Conv Cat NormScore :-
     total_membership Conv Total,
     Total > 0.0,
     NormScore is Score / Total.
-```
+----
 
-### Contamination Detection
+==== Contamination Detection
 
-```prolog
+[source,prolog]
+----
 % categorization/contamination.elpi
 
 % Cross-project contamination: conversations sharing artifacts
@@ -286,11 +301,12 @@ contamination_risk Conv Risk :-
     length AllCats Total,
     Total > 0,
     Risk is NumOther / Total.
-```
+----
 
-### Cross-Conversation Linking
+==== Cross-Conversation Linking
 
-```prolog
+[source,prolog]
+----
 % linking/cross_conversation.elpi
 
 % Fragment reference (message or artifact)
@@ -325,11 +341,12 @@ cross_conversation_ref F1 F2 Conv1 Conv2 :-
     in_conversation F1 Conv1,
     in_conversation F2 Conv2,
     Conv1 \= Conv2.
-```
+----
 
-### Episodic Memory Queries
+==== Episodic Memory Queries
 
-```prolog
+[source,prolog]
+----
 % episodic/memory_queries.elpi
 
 % Recall conversations by criteria
@@ -368,13 +385,14 @@ recall_all [Q1, Q2 | Rest] Convs :-
     recall_by Q1 C1,
     recall_all [Q2 | Rest] C2,
     intersection C1 C2 Convs.
-```
+----
 
-## Testing
+=== Testing
 
-### Unit Tests (ELPI)
+==== Unit Tests (ELPI)
 
-```prolog
+[source,prolog]
+----
 % test/test_lifecycle.elpi
 :- use_module lifecycle/artifact_states.
 
@@ -395,11 +413,12 @@ test "current state with multiple events" :-
 
 % Run tests
 :- run_tests.
-```
+----
 
-### Integration Tests (OCaml)
+==== Integration Tests (OCaml)
 
-```ocaml
+[source,ocaml]
+----
 (* test/test_elpi_integration.ml *)
 open Elpi.API
 
@@ -419,13 +438,14 @@ let test_artifact_lifecycle () =
 let () =
   test_artifact_lifecycle ();
   print_endline "All tests passed"
-```
+----
 
-## Integration with Elixir
+=== Integration with Elixir
 
-### Port Interface
+==== Port Interface
 
-```ocaml
+[source,ocaml]
+----
 (* reasoner_port.ml *)
 open Elpi.API
 
@@ -464,55 +484,60 @@ let main () =
   done
 
 let () = main ()
-```
+----
 
-## Performance
+=== Performance
 
-- **Tabling/Memoization**: ELPI supports tabled predicates for caching
-- **Indexing**: First-argument indexing for fast clause selection
-- **Incremental**: Can add facts without reloading entire database
-- **Target**: <100ms for typical queries
+* *Tabling/Memoization*: ELPI supports tabled predicates for caching
+* *Indexing*: First-argument indexing for fast clause selection
+* *Incremental*: Can add facts without reloading entire database
+* *Target*: <100ms for typical queries
 
-## Troubleshooting
+=== Troubleshooting
 
-### "Predicate not found"
+==== "`Predicate not found`"
 
 Ensure module is loaded:
 
-```prolog
+[source,prolog]
+----
 :- use_module "lifecycle/artifact_states.elpi".
-```
+----
 
-### Stack Overflow
+==== Stack Overflow
 
 Limit recursion depth or use tabling:
 
-```prolog
+[source,prolog]
+----
 :- table linked/2.  % Memoize transitive closure
-```
+----
 
-### Type Errors
+==== Type Errors
 
 Check type declarations:
 
-```prolog
+[source,prolog]
+----
 % Explicit typing helps debugging
 type my_predicate artifact -> state -> prop.
-```
+----
 
-## References
+=== References
 
-- [ELPI Documentation](https://lpcic.github.io/elpi/)
-- [λProlog Tutorial](https://www.lix.polytechnique.fr/Labo/Dale.Miller/lProlog/)
-- Miller & Nadathur (2012). _Programming with Higher-Order Logic_
-- Research: `/docs/research/lambda-prolog-meta-reasoning.adoc`
-- Architecture: `/docs/architecture/system-architecture.adoc`
+* https://lpcic.github.io/elpi/[ELPI Documentation]
+* https://www.lix.polytechnique.fr/Labo/Dale.Miller/lProlog/[λProlog
+Tutorial]
+* Miller & Nadathur (2012). _Programming with Higher-Order Logic_
+* Research: `+/docs/research/lambda-prolog-meta-reasoning.adoc+`
+* Architecture: `+/docs/architecture/system-architecture.adoc+`
 
-## Next Steps
+=== Next Steps
 
-1. Implement core type definitions
-2. Create artifact lifecycle module
-3. Add contamination detection
-4. Implement episodic memory queries
-5. Test on proving-ground conversations
-6. Integrate with OCaml/Elixir via port
+[arabic]
+. Implement core type definitions
+. Create artifact lifecycle module
+. Add contamination detection
+. Implement episodic memory queries
+. Test on proving-ground conversations
+. Integrate with OCaml/Elixir via port

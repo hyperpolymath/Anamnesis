@@ -1,23 +1,25 @@
-# Parser Component (OCaml)
+== Parser Component (OCaml)
 
 Type-safe conversation format parsing using parser combinators.
 
-## Purpose
+=== Purpose
 
-Parse multiple conversation formats (Claude, ChatGPT, Mistral, etc.) into a normalized Generic AST, communicating with Elixir via Erlang ports.
+Parse multiple conversation formats (Claude, ChatGPT, Mistral, etc.)
+into a normalized Generic AST, communicating with Elixir via Erlang
+ports.
 
-## Technology Stack
+=== Technology Stack
 
-- **OCaml** 4.14+ (5.0+ recommended)
-- **Angstrom** 0.15.0 - Parser combinators
-- **Atdgen** 2.16.0 - Type generation from ATD schemas
-- **Yojson** 3.0.0 - Low-level JSON parsing
-- **Alberto** - Erlang External Term Format for port communication
-- **Dune** 3.0+ - Build system
+* *OCaml* 4.14+ (5.0+ recommended)
+* *Angstrom* 0.15.0 - Parser combinators
+* *Atdgen* 2.16.0 - Type generation from ATD schemas
+* *Yojson* 3.0.0 - Low-level JSON parsing
+* *Alberto* - Erlang External Term Format for port communication
+* *Dune* 3.0+ - Build system
 
-## Directory Structure
+=== Directory Structure
 
-```
+....
 parser/
 ├── lib/
 │   ├── conversation_types.atd      # ATD schema definitions
@@ -41,15 +43,16 @@ parser/
 │   └── fixtures/                   # Sample conversation files
 ├── dune-project
 └── README.md                       # This file
-```
+....
 
-## Key Concepts
+=== Key Concepts
 
-### Format Registry Pattern
+==== Format Registry Pattern
 
-Each parser implements the `ConversationFormat` signature:
+Each parser implements the `+ConversationFormat+` signature:
 
-```ocaml
+[source,ocaml]
+----
 module type ConversationFormat = sig
   type format_specific_ast
 
@@ -58,13 +61,15 @@ module type ConversationFormat = sig
   val validate : Generic.conversation -> bool
   val metadata : format_metadata
 end
-```
+----
 
-### Generic Conversation AST
+==== Generic Conversation AST
 
-All format-specific parsers output a normalized `Generic.conversation` type:
+All format-specific parsers output a normalized `+Generic.conversation+`
+type:
 
-```ocaml
+[source,ocaml]
+----
 type conversation = {
   id : string;
   platform : string option;
@@ -73,21 +78,23 @@ type conversation = {
   artifacts : artifact list;
   metadata : (string * string) list;
 }
-```
+----
 
-### Port Communication
+==== Port Communication
 
-The parser runs as a separate OS process, communicating via Erlang External Term Format:
+The parser runs as a separate OS process, communicating via Erlang
+External Term Format:
 
-```
+....
 Elixir Port → stdin (ETF) → OCaml Parser → stdout (ETF) → Elixir Port
-```
+....
 
-## Building
+=== Building
 
-### Prerequisites
+==== Prerequisites
 
-```bash
+[source,bash]
+----
 # Install OPAM (OCaml package manager)
 sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh)
 
@@ -98,17 +105,19 @@ eval $(opam env)
 # Create switch for project
 opam switch create anamnesis 5.1.0
 eval $(opam env)
-```
+----
 
-### Install Dependencies
+==== Install Dependencies
 
-```bash
+[source,bash]
+----
 opam install dune angstrom atdgen yojson alberto cmdliner alcotest qcheck
-```
+----
 
-### Build
+==== Build
 
-```bash
+[source,bash]
+----
 # Generate types from ATD
 dune build @atdgen
 
@@ -117,13 +126,14 @@ dune build
 
 # Run tests
 dune runtest
-```
+----
 
-## Usage
+=== Usage
 
-### As Port Process
+==== As Port Process
 
-```elixir
+[source,elixir]
+----
 # In Elixir
 port = Port.open({:spawn, "./parser/_build/default/bin/parser_port.exe"}, [
   {:packet, 4},
@@ -143,11 +153,12 @@ receive do
     response = :erlang.binary_to_term(data)
     IO.inspect(response.conversation)
 end
-```
+----
 
-### As Library (REPL Testing)
+==== As Library (REPL Testing)
 
-```ocaml
+[source,ocaml]
+----
 # utop
 
 #require "anamnesis_parser";;
@@ -157,13 +168,15 @@ let content = In_channel.read_all "test.json" in
 match Format_registry.parse_auto content with
 | Ok conv -> Printf.printf "Parsed %d messages\n" (List.length conv.messages)
 | Error err -> Printf.eprintf "Error: %s\n" err
-```
+----
 
-## Adding New Format Parsers
+=== Adding New Format Parsers
 
-1. **Create ATD schema** (if format-specific types needed):
+[arabic]
+. *Create ATD schema* (if format-specific types needed):
 
-```ocaml
+[source,ocaml]
+----
 (* lib/claude_types.atd *)
 type claude_message = {
   uuid: string;
@@ -171,13 +184,14 @@ type claude_message = {
   sender: string;
   created_at: string;
 }
-```
+----
 
-2. **Generate types**: `dune build @atdgen`
+[arabic, start=2]
+. *Generate types*: `+dune build @atdgen+`
+. *Implement parser*:
 
-3. **Implement parser**:
-
-```ocaml
+[source,ocaml]
+----
 (* lib/parsers/new_format_parser.ml *)
 module NewFormatParser : Format_registry.ConversationFormat = struct
   type format_specific_ast = ...
@@ -200,30 +214,34 @@ module NewFormatParser : Format_registry.ConversationFormat = struct
     description = "New format parser";
   }
 end
-```
+----
 
-4. **Register format**:
+[arabic, start=4]
+. *Register format*:
 
-```ocaml
+[source,ocaml]
+----
 (* lib/format_registry.ml *)
 let formats = [
   (module ClaudeParser : ConversationFormat);
   (module ChatGPTParser : ConversationFormat);
   (module NewFormatParser : ConversationFormat);  (* Add here *)
 ]
-```
+----
 
-## Testing
+=== Testing
 
-### Unit Tests
+==== Unit Tests
 
-```bash
+[source,bash]
+----
 dune runtest
-```
+----
 
-### Property-Based Testing
+==== Property-Based Testing
 
-```ocaml
+[source,ocaml]
+----
 (* test/test_parser_properties.ml *)
 open QCheck
 
@@ -241,57 +259,60 @@ let prop_parse_idempotent =
     )
 
 let () = QCheck_runner.run_tests [prop_parse_idempotent]
-```
+----
 
-## Performance
+=== Performance
 
-- **Incremental parsing**: Angstrom supports streaming large files
-- **Zero-copy**: Avoid string allocations where possible
-- **Parallel detection**: Format detection can run concurrently
-- **Target**: 100 conversations/sec on modest hardware
+* *Incremental parsing*: Angstrom supports streaming large files
+* *Zero-copy*: Avoid string allocations where possible
+* *Parallel detection*: Format detection can run concurrently
+* *Target*: 100 conversations/sec on modest hardware
 
-## Integration with Elixir
+=== Integration with Elixir
 
-See `/docs/guides/ocaml-elixir-integration.adoc` for detailed integration guide.
+See `+/docs/guides/ocaml-elixir-integration.adoc+` for detailed
+integration guide.
 
-Key points:
-- Use ports (not NIFs) for fault tolerance
-- 4-byte length prefix for message framing
-- ETF serialization via Alberto
-- Process pool in Elixir (4-8 parser workers)
+Key points: - Use ports (not NIFs) for fault tolerance - 4-byte length
+prefix for message framing - ETF serialization via Alberto - Process
+pool in Elixir (4-8 parser workers)
 
-## Troubleshooting
+=== Troubleshooting
 
-### "atdgen: command not found"
+==== "`atdgen: command not found`"
 
-```bash
+[source,bash]
+----
 opam install atdgen
-```
+----
 
-### Port hangs on large files
+==== Port hangs on large files
 
 Increase buffer size or implement streaming:
 
-```ocaml
+[source,ocaml]
+----
 (* Use Angstrom.Buffered for incremental parsing *)
-```
+----
 
-### ETF decode errors
+==== ETF decode errors
 
-Ensure Alberto version matches Elixir OTP version. Test with simple messages first.
+Ensure Alberto version matches Elixir OTP version. Test with simple
+messages first.
 
-## References
+=== References
 
-- [Angstrom Documentation](https://github.com/inhabitedtype/angstrom)
-- [ATD/Atdgen Manual](https://atd.readthedocs.io/)
-- [Alberto (ETF Library)](https://github.com/fredrb/alberto)
-- Research: `/docs/research/ocaml-parsing-elixir-bridge.adoc`
-- Architecture: `/docs/architecture/system-architecture.adoc`
+* https://github.com/inhabitedtype/angstrom[Angstrom Documentation]
+* https://atd.readthedocs.io/[ATD/Atdgen Manual]
+* https://github.com/fredrb/alberto[Alberto (ETF Library)]
+* Research: `+/docs/research/ocaml-parsing-elixir-bridge.adoc+`
+* Architecture: `+/docs/architecture/system-architecture.adoc+`
 
-## Next Steps
+=== Next Steps
 
-1. Implement Claude format parser (Milestone 1)
-2. Create test fixtures from proving-ground
-3. Add ChatGPT format parser
-4. Benchmark and optimize
-5. Add remaining format parsers
+[arabic]
+. Implement Claude format parser (Milestone 1)
+. Create test fixtures from proving-ground
+. Add ChatGPT format parser
+. Benchmark and optimize
+. Add remaining format parsers

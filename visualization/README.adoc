@@ -1,27 +1,29 @@
-# Visualization Component (AffineScript)
+== Visualization Component (AffineScript)
 
-Type-safe, functional visualization layer for exploring conversation graphs, artifact lifecycles, and multi-project categorization.
+Type-safe, functional visualization layer for exploring conversation
+graphs, artifact lifecycles, and multi-project categorization.
 
-## Purpose
+=== Purpose
 
-- Visualize conversation graphs (messages, artifacts, relationships)
-- Display artifact lifecycle timelines
-- Show fuzzy multi-project categorization
-- Interactive search, filter, and exploration
-- Communicate with Elixir backend via HTTP API
+* Visualize conversation graphs (messages, artifacts, relationships)
+* Display artifact lifecycle timelines
+* Show fuzzy multi-project categorization
+* Interactive search, filter, and exploration
+* Communicate with Elixir backend via HTTP API
 
-## Technology Stack
+=== Technology Stack
 
-- **AffineScript** 11+ - Type-safe functional language compiling to JavaScript
-- **React** 18+ - UI component library
-- **affinescript-react** - Official React bindings
-- **Reagraph** - WebGL graph visualization (custom bindings)
-- **affinescript-recharts** - Timeline/chart visualization
-- **Vite** - Build tool and dev server
+* *AffineScript* 11+ - Type-safe functional language compiling to
+JavaScript
+* *React* 18+ - UI component library
+* *affinescript-react* - Official React bindings
+* *Reagraph* - WebGL graph visualization (custom bindings)
+* *affinescript-recharts* - Timeline/chart visualization
+* *Vite* - Build tool and dev server
 
-## Directory Structure
+=== Directory Structure
 
-```
+....
 visualization/
 ├── src/
 │   ├── Anamnesis.res              # Root module
@@ -54,13 +56,14 @@ visualization/
 ├── package.json
 ├── vite.config.js
 └── README.md                      # This file
-```
+....
 
-## Key Concepts
+=== Key Concepts
 
-### Type-Safe Domain Modeling
+==== Type-Safe Domain Modeling
 
-```affinescript
+[source,affinescript]
+----
 // types/Domain.res
 
 // Phantom types prevent mixing IDs
@@ -109,11 +112,12 @@ type graph = {
   nodes: array<node>,
   edges: array<edge>,
 }
-```
+----
 
-### Reagraph Bindings
+==== Reagraph Bindings
 
-```affinescript
+[source,affinescript]
+----
 // bindings/Reagraph.res
 
 module GraphCanvas = {
@@ -165,11 +169,12 @@ let toReagraphEdge = (edge: Domain.edge): reagraphEdge => {
     label: Some(Domain.edgeTypeToString(edge.edgeType)),
   }
 }
-```
+----
 
-### Color Mixing (Fuzzy Categories)
+==== Color Mixing (Fuzzy Categories)
 
-```affinescript
+[source,affinescript]
+----
 // transforms/ColorMixing.res
 
 type rgb = {r: int, g: int, b: int}
@@ -208,11 +213,12 @@ let mixColors = (memberships: array<Domain.projectMembership>): string => {
     `rgb(${Int.toString(normalize(mixed.r))}, ${Int.toString(normalize(mixed.g))}, ${Int.toString(normalize(mixed.b))})`
   }
 }
-```
+----
 
-### State Management
+==== State Management
 
-```affinescript
+[source,affinescript]
+----
 // state/AppState.res
 
 type state = {
@@ -261,11 +267,12 @@ let initialState = {
   loading: false,
   error: None,
 }
-```
+----
 
-### API Client
+==== API Client
 
-```affinescript
+[source,affinescript]
+----
 // state/Api.res
 
 type apiError =
@@ -324,31 +331,34 @@ let sparqlQuery = async (query: string): result<Js.Json.t, apiError> => {
     Error(NetworkError(Js.Exn.message(e)->Option.getWithDefault("Unknown error")))
   }
 }
-```
+----
 
-## Building
+=== Building
 
-### Prerequisites
+==== Prerequisites
 
-```bash
+[source,bash]
+----
 # Install Node.js 18+
 nvm install 18
 nvm use 18
 
 # OR using package manager
 brew install node  # macOS
-```
+----
 
-### Install Dependencies
+==== Install Dependencies
 
-```bash
+[source,bash]
+----
 cd visualization
 npm install
-```
+----
 
-### Package List
+==== Package List
 
-```json
+[source,json]
+----
 {
   "dependencies": {
     "@affinescript/core": "^1.0.0",
@@ -364,11 +374,12 @@ npm install
     "@vitejs/plugin-react": "^4.0.0"
   }
 }
-```
+----
 
-### AffineScript Config
+==== AffineScript Config
 
-```json
+[source,json]
+----
 // bsconfig.json
 {
   "name": "anamnesis-visualization",
@@ -397,11 +408,12 @@ npm install
     "error": "+101+8"
   }
 }
-```
+----
 
-### Build & Run
+==== Build & Run
 
-```bash
+[source,bash]
+----
 # Development mode (watch + hot reload)
 npm run dev
 
@@ -410,13 +422,14 @@ npm run build
 
 # Type check
 npm run res:build
-```
+----
 
-## Usage
+=== Usage
 
-### Main App Component
+==== Main App Component
 
-```affinescript
+[source,affinescript]
+----
 // components/App.res
 
 @react.component
@@ -460,11 +473,12 @@ let make = () => {
     </main>
   </div>
 }
-```
+----
 
-### Conversation Graph Component
+==== Conversation Graph Component
 
-```affinescript
+[source,affinescript]
+----
 // components/ConversationGraph.res
 
 @react.component
@@ -495,13 +509,14 @@ let make = (~graph: Domain.graph, ~selectedNode, ~onNodeClick) => {
     }}
   </div>
 }
-```
+----
 
-## Testing
+=== Testing
 
-### Unit Tests (Jest)
+==== Unit Tests (Jest)
 
-```javascript
+[source,javascript]
+----
 // __tests__/ColorMixing.test.js
 import { mixColors } from '../src/transforms/ColorMixing.bs.js';
 
@@ -518,11 +533,12 @@ test('mixColors blends multiple projects', () => {
   const result = mixColors(memberships);
   expect(result).toMatch(/^rgb\(\d+, \d+, \d+\)$/);
 });
-```
+----
 
-### Component Tests (React Testing Library)
+==== Component Tests (React Testing Library)
 
-```javascript
+[source,javascript]
+----
 // __tests__/ConversationGraph.test.js
 import { render, screen } from '@testing-library/react';
 import { make as ConversationGraph } from '../src/components/ConversationGraph.bs.js';
@@ -537,13 +553,14 @@ test('renders graph canvas', () => {
 
   expect(screen.getByClassName('conversation-graph')).toBeInTheDocument();
 });
-```
+----
 
-## Performance
+=== Performance
 
-### Memoization
+==== Memoization
 
-```affinescript
+[source,affinescript]
+----
 let expensiveComputation = React.useMemo1(
   () => {
     // Heavy computation
@@ -551,11 +568,12 @@ let expensiveComputation = React.useMemo1(
   },
   [graph]  // Only recompute when graph changes
 )
-```
+----
 
-### Virtual Scrolling
+==== Virtual Scrolling
 
-```affinescript
+[source,affinescript]
+----
 // For large lists
 module VirtualList = {
   @react.component
@@ -572,11 +590,12 @@ module VirtualList = {
     </div>
   }
 }
-```
+----
 
-### Debounced Search
+==== Debounced Search
 
-```affinescript
+[source,affinescript]
+----
 let useDebounce = (value, delay) => {
   let (debouncedValue, setDebouncedValue) = React.useState(() => value)
 
@@ -591,20 +610,22 @@ let useDebounce = (value, delay) => {
 // Usage
 let searchText = /* ... */
 let debouncedSearch = useDebounce(searchText, 300)  // 300ms delay
-```
+----
 
-## Deployment
+=== Deployment
 
-### Production Build
+==== Production Build
 
-```bash
+[source,bash]
+----
 npm run build
 # Output in dist/
-```
+----
 
-### Serve Static Files
+==== Serve Static Files
 
-```nginx
+[source,nginx]
+----
 # nginx.conf
 server {
     listen 80;
@@ -619,54 +640,59 @@ server {
         proxy_pass http://localhost:4000;
     }
 }
-```
+----
 
-## Troubleshooting
+=== Troubleshooting
 
-### Type Errors
+==== Type Errors
 
 AffineScript provides clear compiler errors. Read them carefully:
 
-```
+....
 Error: This has type:
   string
 But somewhere wanted:
   int
-```
+....
 
-### AffineScript Compilation Fails
+==== AffineScript Compilation Fails
 
-```bash
+[source,bash]
+----
 # Clean build
 npx affinescript clean
 npx affinescript build
-```
+----
 
-### Reagraph Not Rendering
+==== Reagraph Not Rendering
 
 Check WebGL support:
 
-```javascript
+[source,javascript]
+----
 const canvas = document.createElement('canvas');
 const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 console.log('WebGL supported:', !!gl);
-```
+----
 
-## References
+=== References
 
-- [AffineScript Documentation](https://affinescript-lang.org/docs/manual/latest/introduction)
-- [AffineScript React](https://affinescript-lang.org/docs/react/latest/introduction)
-- [Reagraph](https://reagraph.dev/)
-- [affinescript-recharts](https://github.com/minnozz/affinescript-recharts)
-- Research: `/docs/research/affinescript-visualization.adoc`
-- Architecture: `/docs/architecture/system-architecture.adoc`
+* https://affinescript-lang.org/docs/manual/latest/introduction[AffineScript
+Documentation]
+* https://affinescript-lang.org/docs/react/latest/introduction[AffineScript
+React]
+* https://reagraph.dev/[Reagraph]
+* https://github.com/minnozz/affinescript-recharts[affinescript-recharts]
+* Research: `+/docs/research/affinescript-visualization.adoc+`
+* Architecture: `+/docs/architecture/system-architecture.adoc+`
 
-## Next Steps
+=== Next Steps
 
-1. Create Reagraph bindings
-2. Implement ConversationGraph component
-3. Build ArtifactTimeline with affinescript-recharts
-4. Add SearchFilter component
-5. Integrate API client
-6. Test with mock data
-7. Connect to Elixir backend
+[arabic]
+. Create Reagraph bindings
+. Implement ConversationGraph component
+. Build ArtifactTimeline with affinescript-recharts
+. Add SearchFilter component
+. Integrate API client
+. Test with mock data
+. Connect to Elixir backend
