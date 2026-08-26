@@ -46,13 +46,13 @@ fi
 # Category 4: Documentation (15 points)
 echo "4. Documentation:"
 doc_score=0
-[ -f "README.md" ] && ((doc_score++))
-[ -f "LICENSE.txt" ] && ((doc_score++))
-[ -f "SECURITY.md" ] && ((doc_score++))
-[ -f "CONTRIBUTING.md" ] && ((doc_score++))
-[ -f "CODE_OF_CONDUCT.md" ] && ((doc_score++))
-[ -f "MAINTAINERS.md" ] && ((doc_score++))
-[ -f "CHANGELOG.md" ] && ((doc_score++))
+if [ -f "README.adoc" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "LICENSE" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "SECURITY.adoc" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "CONTRIBUTING.adoc" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "CODE_OF_CONDUCT.adoc" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "MAINTAINERS.adoc" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "CHANGELOG.adoc" ]; then doc_score=$((doc_score + 1)); fi
 echo "   $doc_score/7 required files present"
 score=$((score + doc_score * 15 / 7))
 
@@ -92,14 +92,14 @@ score=$((score + build_score * 10 / 3))
 # Category 7: Security (10 points)
 echo "7. Security:"
 sec_score=0
-[ -f "SECURITY.md" ] && ((sec_score++))
+[ -f "SECURITY.adoc" ] && ((sec_score++))
 [ -f ".well-known/security.txt" ] && ((sec_score++))
 echo "   $sec_score/2 security files present"
 score=$((score + sec_score * 10 / 2))
 
 # Category 8: Licensing (10 points)
 echo "8. Licensing:"
-if [ -f "LICENSE.txt" ] && grep -q "MIT OR Palimpsest" LICENSE.txt; then
+if [ -f "LICENSE" ] && grep -q "MIT OR Palimpsest" LICENSE.txt; then
     echo "   ✓ Dual license (MIT + Palimpsest)"
     score=$((score + 10))
 else
@@ -108,7 +108,7 @@ fi
 
 # Category 9: Contribution Model (5 points)
 echo "9. Contribution Model:"
-if [ -f "CONTRIBUTING.md" ] && grep -q "TPCF" CONTRIBUTING.md; then
+if [ -f "CONTRIBUTING.adoc" ] && grep -q "TPCF" CONTRIBUTING.adoc; then
     echo "   ✓ TPCF documented"
     score=$((score + 5))
 else
@@ -117,7 +117,7 @@ fi
 
 # Category 10: Community Guidelines (5 points)
 echo "10. Community Guidelines:"
-if [ -f "CODE_OF_CONDUCT.md" ] && grep -q "CCCP" CODE_OF_CONDUCT.md; then
+if [ -f "CODE_OF_CONDUCT.adoc" ] && grep -q "CCCP" CODE_OF_CONDUCT.adoc; then
     echo "   ✓ CCCP-based Code of Conduct"
     score=$((score + 5))
 else
@@ -126,7 +126,7 @@ fi
 
 # Category 11: Versioning (5 points)
 echo "11. Versioning:"
-if [ -f "CHANGELOG.md" ] && grep -q "Semantic Versioning" CHANGELOG.md; then
+if [ -f "CHANGELOG.adoc" ] && grep -q "Semantic Versioning" CHANGELOG.adoc; then
     echo "   ✓ Semantic versioning"
     score=$((score + 5))
 else
