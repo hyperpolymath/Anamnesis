@@ -49,7 +49,7 @@ doc_score=0
 [ -f "README.md" ] && ((doc_score++))
 [ -f "LICENSE.txt" ] && ((doc_score++))
 [ -f "SECURITY.md" ] && ((doc_score++))
-[ -f "CONTRIBUTING.adoc" ] && ((doc_score++))
+[ -f "CONTRIBUTING.adoc" ] && ((doc_score += 1))
 [ -f "CODE_OF_CONDUCT.adoc" ] && ((doc_score++))
 [ -f "MAINTAINERS.md" ] && ((doc_score++))
 [ -f "CHANGELOG.adoc" ] && ((doc_score++))
