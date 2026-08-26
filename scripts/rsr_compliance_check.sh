@@ -46,13 +46,13 @@ fi
 # Category 4: Documentation (15 points)
 echo "4. Documentation:"
 doc_score=0
-[ -f "README.md" ] && ((doc_score++))
-[ -f "LICENSE.txt" ] && ((doc_score++))
-[ -f "SECURITY.md" ] && ((doc_score++))
-[ -f "CONTRIBUTING.adoc" ] && ((doc_score += 1))
-[ -f "CODE_OF_CONDUCT.adoc" ] && ((doc_score++))
-[ -f "MAINTAINERS.md" ] && ((doc_score++))
-[ -f "CHANGELOG.adoc" ] && ((doc_score++))
+if [ -f "README.adoc" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "LICENSE" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "SECURITY.adoc" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "CONTRIBUTING.adoc" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "CODE_OF_CONDUCT.adoc" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "MAINTAINERS.adoc" ]; then doc_score=$((doc_score + 1)); fi
+if [ -f "CHANGELOG.adoc" ]; then doc_score=$((doc_score + 1)); fi
 echo "   $doc_score/7 required files present"
 score=$((score + doc_score * 15 / 7))
 
@@ -92,14 +92,14 @@ score=$((score + build_score * 10 / 3))
 # Category 7: Security (10 points)
 echo "7. Security:"
 sec_score=0
-[ -f "SECURITY.md" ] && ((sec_score++))
+[ -f "SECURITY.adoc" ] && ((sec_score++))
 [ -f ".well-known/security.txt" ] && ((sec_score++))
 echo "   $sec_score/2 security files present"
 score=$((score + sec_score * 10 / 2))
 
 # Category 8: Licensing (10 points)
 echo "8. Licensing:"
-if [ -f "LICENSE.txt" ] && grep -q "MIT OR Palimpsest" LICENSE.txt; then
+if [ -f "LICENSE" ] && grep -q "MIT OR Palimpsest" LICENSE.txt; then
     echo "   ✓ Dual license (MIT + Palimpsest)"
     score=$((score + 10))
 else
